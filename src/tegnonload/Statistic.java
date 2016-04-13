@@ -125,15 +125,15 @@ public class Statistic {
                 int count = rs.getInt(1);
                 int i = 0;
                 if (count == 0) {
-                    insertStatement.setString(i++, messageId);
-                    insertStatement.setInt(i++, sensorId);
-                    insertStatement.setDate(i++, date);
-                    insertStatement.setInt(i++, sensorType);
-                    insertStatement.setInt(i++, recordCount);
-                    insertStatement.setDouble(i++, sensorValue);
-                    insertStatement.setDouble(i++, sumOfSquares);
-                    insertStatement.setDouble(i++, max);
-                    insertStatement.setDouble(i++, min);
+                    insertStatement.setString(i++,  messageId);
+                    insertStatement.setInt(i++,     sensorId);
+                    insertStatement.setDate(i++,    date);
+                    insertStatement.setInt(i++,     sensorType);
+                    insertStatement.setInt(i++,     recordCount);
+                    insertStatement.setDouble(i++,  sensorValue);
+                    insertStatement.setDouble(i++,  sumOfSquares);
+                    insertStatement.setDouble(i++,  max);
+                    insertStatement.setDouble(i++,  min);
 
                     insertStatement.executeQuery();
                 } else {
