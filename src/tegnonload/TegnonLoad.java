@@ -8,6 +8,8 @@ package tegnonload;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.util.Vector;
 
 /**
@@ -16,8 +18,47 @@ import java.util.Vector;
  */
 public class TegnonLoad {
 
-    static String messageId; 
+    static String messageId;
     Vector<PiLine> piLines = new Vector<PiLine>();
+
+    public static Connection conn;
+
+    static void connect() {
+        try {
+            String driver = "sun.jdbc.odbc.JdbcOdbcDriver";
+            String url = "jdbc:odbc:javaUser";
+            String username = "javaUser1";
+            String password = "sHxXWij02AE4ciJre7yX";
+            Class.forName(driver);
+            conn = DriverManager.getConnection(url, username, password);
+        } catch (Exception exc) {
+            System.out.println(exc);
+        }
+
+    }
+    
+    
+    static public void connectSQL() {
+        	// Create a variable for the connection string.
+                String username = "javaUser1";
+            String password = "sHxXWij02AE4ciJre7yX";
+		String connectionUrl = "jdbc:sqlserver://localhost:1433;" +
+			"databaseName=TegnonEfficiency";
+
+//			"databaseName=TegnonEfficiency;integratedSecurity=true;";
+		// Declare the JDBC objects.
+		
+        	try {
+        		// Establish the connection.
+        		Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+            		conn = DriverManager.getConnection(connectionUrl,username,password);
+                        System.out.println("Connection Succeeded");
+                        
+                } catch (Exception e) {
+			e.printStackTrace();
+		}
+
+    }
 
     void runFile(String fileName) {
         try {
@@ -30,11 +71,11 @@ public class TegnonLoad {
             while (str != null) {
                 //if(br.ready()) {
                 System.out.println("Read line :" + str);
-                PiLine pil =new PiLine(str); 
+                PiLine pil = new PiLine(str);
                 piLines.add(pil);
                 System.out.println(pil.show());
                 System.out.println(pil.sensors[0].head());
-                for (int j=0; j < pil.numberOfAttachedSensors; j++) {
+                for (int j = 0; j < pil.numberOfAttachedSensors; j++) {
                     if (pil.sensors[j] != null) {
                         System.out.println("   " + pil.sensors[j].show());
                     } else {
@@ -47,14 +88,16 @@ public class TegnonLoad {
                 //    System.out.println("[" + i + "] " + strs[i]);
             }
             Sensor.writeSQL(messageId);
-            
+
         } catch (Exception exc) {
             System.out.println(exc.toString());
             exc.printStackTrace();
         }
         System.out.println("Pilines scanned = " + piLines.size());
     }
-
+String dirNAme = "C:\\Tegnon\\tegnonefficiencydatagmail.com\\za.tegnon.consol@gmail.com";
+public void runDirectory(String dir){
+}
     /**
      * @param args the command line arguments
      */
@@ -64,17 +107,17 @@ public class TegnonLoad {
         for (int i = 0; i < args.length; i++) {
             System.out.println("" + i + "  " + args[i]);
         }
+        connectSQL();
+        /*
         TegnonLoad x = new TegnonLoad();
         Device.load();
         Sensor.load();
-        
+
         Device.dump();
         Sensor.dump();
-        
-        x.runFile(args[0]);
 
-       
-        
+        x.runFile(args[0]);
+*/
     }
-   
+
 }
