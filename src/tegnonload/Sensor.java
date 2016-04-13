@@ -6,6 +6,8 @@
 package tegnonload;
 
 import java.util.HashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 /**
@@ -13,6 +15,8 @@ import java.util.HashMap;
  * @author Chris
  */
 public class Sensor {
+    static final Logger logger = Logger.getLogger("Sensor");
+    
     static HashMap<String,Sensor> sensors = new HashMap<String,Sensor>();
     
     int id;
@@ -43,16 +47,19 @@ public class Sensor {
             lineId = Integer.parseInt(strs[i++]);
          } catch(Exception exc) {
             lineId = -1; 
+            logger.log(Level.SEVERE,"LineID:" + strs[i-1] + " " + exc.getMessage(), exc);
          }
          try {
          netId = Integer.parseInt(strs[i++]);
          } catch(Exception exc) {
             netId = -1; 
+            logger.log(Level.SEVERE,"NetID:" + strs[i-1] + " " + exc.getMessage(), exc);
          }
          try{
              columnNumber = Integer.parseInt(strs[i++]);
         } catch(Exception exc) {
             columnNumber = -1; 
+            logger.log(Level.SEVERE,"Column Count:" + strs[i-1] + " " + exc.getMessage(), exc);
          }
           //System.out.println("   sensor dev:"+ device.key() + "," + id);
   }
@@ -65,6 +72,12 @@ public class Sensor {
         
         return sensors.get(""+dev.key() + "," + columnNumber);
     }
+    static void zeroTots() {
+        for(Sensor s: sensors.values()) {
+            s.stat.zero();
+        }
+    }
+    
     
     static void dump() {
         System.out.println("****************************************************** Sensors Dump");
@@ -78,21 +91,15 @@ public class Sensor {
    
     
     static void writeSQL(String messageId) {
-        String str = "??";
-        int count = 0;
-        System.out.println("******************************************************** writeSQL for " + sensors.size());
+        //System.out.println("******************************************************** writeSQL for " + sensors.size());
         for (Sensor s : sensors.values()) {
             if (s.typeTID == 20) {
-                str=s.stat.writeEnergySQL(messageId);
+                s.stat.writeEnergySQL(messageId);
             } else {
-                str=s.stat.writeFlowSQL(messageId);
-            }
-            if (str != null) {
-                System.out.println(str);
-                count++;
+                s.stat.writeFlowSQL(messageId);
             }
         }
-        System.out.println(" SensorDtaHour updated for " + count + " records");
+        //System.out.println(" SensorDataHour updated for " + count + " records");
         
        
     }

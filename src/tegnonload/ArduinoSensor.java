@@ -5,11 +5,14 @@
  */
 package tegnonload;
 
+import java.util.logging.Logger;
+
 /**
  *
  * @author Chris
  */
 public class ArduinoSensor {
+    static final Logger logger = Logger.getLogger("ArduinoSensor");
     
         int     sensorType;     //Refers to TID in SensorType Table
         int     sensorStatus;   //Refers to TID in Sensor Status Table

@@ -6,12 +6,14 @@
 package tegnonload;
 
 import java.util.HashMap;
+import java.util.logging.Logger;
 
 /**
  *
  * @author Chris
  */
 public class Device {
+    static final Logger logger = Logger.getLogger("Device");
     
  static HashMap<String,Device> devices = new HashMap<String,Device>();
  static HashMap<Integer,Device> devicesById = new HashMap<Integer,Device>();
