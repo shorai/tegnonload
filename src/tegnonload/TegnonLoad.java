@@ -96,6 +96,8 @@ public class TegnonLoad {
         System.out.println("Pilines scanned = " + piLines.size());
     }
 String dirNAme = "C:\\Tegnon\\tegnonefficiencydatagmail.com\\za.tegnon.consol@gmail.com";
+
+
 public void runDirectory(String dir){
 }
     /**
