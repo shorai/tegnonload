@@ -24,9 +24,9 @@ public class Statistic {
     static PreparedStatement updateStatement = null;
     static PreparedStatement findStatement = null;
 
-    static final String insertSql = "insert into SensorDataHalfHour(attachmentID, sensorId, startTime, sensorType, recordCount, sensorValue,maximum, minimum, sumOfSquares) values(%,%,%,%,%,%,%,%,%)";
-    static final String updateSql = "update SensorDataHalfHour set attachmentID=%, sensorId=%, startTime=%, sensorType=%, recordCount=%, sensorValue=%,maximum=%, minimum=%, sumOfSquares=% where id=%";
-    static final String findSql = "select count(*) from SensorDataHalfHour where sensorID=% and startTime=%";
+    static final String insertSql = "insert into SensorDataHalfHour(AttachmentID, sensorId, startTime, sensorType, recordCount, sensorValue,maximum, minimum, sumOfSquares) values(%,%,%,%,%,%,%,%,%)";
+    static final String updateSql = "update SensorDataHalfHour set attachmentID=%,  recordCount=%, sensorValue=%,maximum=%, minimum=%, sumOfSquares=% where sensorId=% and startTime=% and sensorType=%,";
+    static final String findSql = "select count(*) from SensorDataHalfHour where sensorID=% and startTime=% and sensorType=%";
     static final DateFormat df = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SS");
 
     Sensor sensor;
@@ -118,11 +118,14 @@ public class Statistic {
                 // look for record on DB
                 findStatement.setInt(1, sensorId);
                 findStatement.setDate(2, date);
+                findStatement.setInt(3, sensorType);
+                
                 ResultSet rs = findStatement.executeQuery();
                 rs.next();
                 int count = rs.getInt(1);
                 int i = 0;
                 if (count == 0) {
+                    insertStatement.setString(i++, messageId);
                     insertStatement.setInt(i++, sensorId);
                     insertStatement.setDate(i++, date);
                     insertStatement.setInt(i++, sensorType);
@@ -134,7 +137,7 @@ public class Statistic {
 
                     insertStatement.executeQuery();
                 } else {
-                    updateStatement.setInt(i++, sensorType);
+                    updateStatement.setString(i++, messageId);
                     updateStatement.setInt(i++, recordCount);
                     updateStatement.setDouble(i++, sensorValue);
                     updateStatement.setDouble(i++, sumOfSquares);
@@ -143,6 +146,7 @@ public class Statistic {
 
                     updateStatement.setInt(i++, sensorId);
                     updateStatement.setDate(i++, date);
+                    updateStatement.setInt(i++, sensorType);
 
                     updateStatement.executeQuery();
                 }
