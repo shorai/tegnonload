@@ -41,6 +41,10 @@ public class Statistic {
     Double min;
     int count;
 
+    static {
+        logger.addHandler(TegnonLoad.logHandler);
+    }
+
     public Statistic(Sensor s) {
         sensor = s;
         zero();

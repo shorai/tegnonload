@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE log SYSTEM "logger.dtd">
+<log>
+<record>
+  <date>2016-04-13T15:50:33</date>
+  <millis>1460555433651</millis>
+  <sequence>0</sequence>
+  <logger>TegnonLoad</logger>
+  <level>SEVERE</level>
+  <class>tegnonload.TegnonLoad</class>
+  <method>connectSQL</method>
+  <thread>1</thread>
+  <message>The TCP/IP connection to the host localhost, port 1433 has failed. Error: "Connection refused: connect. Verify the connection properties. Make sure that an instance of SQL Server is running on the host and accepting TCP/IP connections at the port. Make sure that TCP connections to the port are not blocked by a firewall.".</message>
+  <exception>
+    <message>com.microsoft.sqlserver.jdbc.SQLServerException: The TCP/IP connection to the host localhost, port 1433 has failed. Error: "Connection refused: connect. Verify the connection properties. Make sure that an instance of SQL Server is running on the host and accepting TCP/IP connections at the port. Make sure that TCP connections to the port are not blocked by a firewall.".</message>
+    <frame>
+      <class>com.microsoft.sqlserver.jdbc.SQLServerException</class>
+      <method>makeFromDriverError</method>
+      <line>191</line>
+    </frame>
+    <frame>
+      <class>com.microsoft.sqlserver.jdbc.SQLServerException</class>
+      <method>ConvertConnectExceptionToSQLServerException</method>
+      <line>242</line>
+    </frame>
+    <frame>
+      <class>com.microsoft.sqlserver.jdbc.SocketFinder</class>
+      <method>findSocket</method>
+      <line>2363</line>
+    </frame>
+    <frame>
+      <class>com.microsoft.sqlserver.jdbc.TDSChannel</class>
+      <method>open</method>
+      <line>545</line>
+    </frame>
+    <frame>
+      <class>com.microsoft.sqlserver.jdbc.SQLServerConnection</class>
+      <method>connectHelper</method>
+      <line>1789</line>
+    </frame>
+    <frame>
+      <class>com.microsoft.sqlserver.jdbc.SQLServerConnection</class>
+      <method>login</method>
+      <line>1454</line>
+    </frame>
+    <frame>
+      <class>com.microsoft.sqlserver.jdbc.SQLServerConnection</class>
+      <method>connectInternal</method>
+      <line>1285</line>
+    </frame>
+    <frame>
+      <class>com.microsoft.sqlserver.jdbc.SQLServerConnection</class>
+      <method>connect</method>
+      <line>700</line>
+    </frame>
+    <frame>
+      <class>com.microsoft.sqlserver.jdbc.SQLServerDriver</class>
+      <method>connect</method>
+      <line>1131</line>
+    </frame>
+    <frame>
+      <class>java.sql.DriverManager</class>
+      <method>getConnection</method>
+      <line>664</line>
+    </frame>
+    <frame>
+      <class>java.sql.DriverManager</class>
+      <method>getConnection</method>
+      <line>247</line>
+    </frame>
+    <frame>
+      <class>tegnonload.TegnonLoad</class>
+      <method>connectSQL</method>
+      <line>77</line>
+    </frame>
+    <frame>
+      <class>tegnonload.TegnonLoad</class>
+      <method>main</method>
+      <line>176</line>
+    </frame>
+  </exception>
+</record>
+<record>
+  <date>2016-04-13T15:50:33</date>
+  <millis>1460555433682</millis>
+  <sequence>1</sequence>
+  <logger>Stitistic</logger>
+  <level>SEVERE</level>
+  <class>tegnonload.Statistic</class>
+  <method>prepare</method>
+  <thread>1</thread>
+  <message>Statistic():null</message>
+  <exception>
+    <message>java.lang.NullPointerException</message>
+    <frame>
+      <class>tegnonload.Statistic</class>
+      <method>prepare</method>
+      <line>55</line>
+    </frame>
+    <frame>
+      <class>tegnonload.TegnonLoad</class>
+      <method>main</method>
+      <line>177</line>
+    </frame>
+  </exception>
+</record>
+</log>

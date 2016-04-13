@@ -31,7 +31,9 @@ public class Sensor {
     Statistic stat = new Statistic(this);
 
     //SensorID	DeviceID	SensorTypeTID	SensorUnitTID	MeasurementTypeTID	LineID	NetworkID	SensorNumber",
-    
+    static {
+        logger.addHandler(TegnonLoad.logHandler);
+    }
     public Sensor(String vals) {
          String[] strs = vals.split("[\t ]+");
   

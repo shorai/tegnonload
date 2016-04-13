@@ -11,6 +11,8 @@ import java.io.FileReader;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.Vector;
+import java.util.logging.FileHandler;
+import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -19,18 +21,33 @@ import java.util.logging.Logger;
  * @author Chris
  */
 public class TegnonLoad {
-    
+
+    static final int LOG_SIZE = 1000000;
+    static final int LOG_ROTATION_COUNT = 3;
+
     static final Logger logger = Logger.getLogger("TegnonLoad");
-    
+    static Handler logHandler = null;
+
     //static final String dirName = "C:\\Tegnon\\tegnonefficiencydatagmail.com\\za.tegnon.consol@gmail.com";
     static final String outName = "C:\\Tegnon\\tegnonefficiencydatagmail.com\\processed";
 
     static String dirName = "D:/Tegnon/logs/WSSVC2";
     static String messageId;
     Vector<PiLine> piLines = new Vector<PiLine>();
-    
+
     public static Connection conn;
-    
+
+    static {
+        try {
+            logHandler = new FileHandler("TegnonLoad.log", LOG_SIZE, LOG_ROTATION_COUNT);
+            logger.addHandler(logHandler);
+        } catch (Exception exc) {
+            System.out.println("Failed to create a log ... Aaargh");
+            System.exit(2);
+        }
+
+    }
+
     static void connect() {
         try {
             String driver = "sun.jdbc.odbc.JdbcOdbcDriver";
@@ -42,9 +59,9 @@ public class TegnonLoad {
         } catch (Exception exc) {
             System.out.println(exc);
         }
-        
+
     }
-    
+
     static public void connectSQL() {
         // Create a variable for the connection string.
         String username = "javaUser1";
@@ -59,14 +76,14 @@ public class TegnonLoad {
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
             conn = DriverManager.getConnection(connectionUrl, username, password);
             System.out.println("Connection Succeeded");
-            
+
         } catch (Exception exc) {
             exc.printStackTrace();
             logger.log(Level.SEVERE, exc.getMessage(), exc);
         }
-        
+
     }
-    
+
     void runFile(String fileName) {
         try {
             File f = new File(fileName);
@@ -74,7 +91,7 @@ public class TegnonLoad {
             FileReader fr = new FileReader(f);
             BufferedReader br = new BufferedReader(fr);
             String str = br.readLine();
-            
+
             while (str != null) {
                 //if(br.ready()) {
                 System.out.println("Read line :" + str);
@@ -120,11 +137,11 @@ public class TegnonLoad {
         }
         System.out.println("Pilines scanned = " + piLines.size());
     }
-    
+
     public void runDirectory(String dir) {
         File f = new File(dir);
         int count = 0;
-        
+
         if (f.isDirectory()) {
             System.out.println("Processing directory: " + dir);
             for (File g : f.listFiles()) {
@@ -136,7 +153,7 @@ public class TegnonLoad {
                 }
             }
         }
-        
+
     }
 
     /**
@@ -168,10 +185,10 @@ public class TegnonLoad {
          */
         conn = null;
         TegnonLoad x = new TegnonLoad();
-        
+
         x.runFile(args[0]);
 
         //x.runDirectory(dirName);
     }
-    
+
 }

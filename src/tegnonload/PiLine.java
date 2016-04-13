@@ -7,6 +7,7 @@ package tegnonload;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static tegnonload.Sensor.logger;
 
 /**
  *
@@ -29,6 +30,10 @@ public class PiLine {
     int numberOfAttachedSensors; // Number of sensors attached to device
 
     ArduinoSensor[] sensors = new ArduinoSensor[10];
+
+    static {
+        logger.addHandler(TegnonLoad.logHandler);
+    }
 
     PiLine(String str) {
         String[] strs = str.split("[|]");
@@ -66,7 +71,7 @@ public class PiLine {
             System.out.println(exc.toString());
             exc.printStackTrace();
 
-            logger.log(Level.SEVERE,exc.getMessage(), exc);
+            logger.log(Level.SEVERE, exc.getMessage(), exc);
         }
     }
 
