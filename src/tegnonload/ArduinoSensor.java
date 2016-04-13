@@ -33,7 +33,7 @@ public class ArduinoSensor {
             sensorUnits = Integer.decode(strs[index++]);
             measurmentType = Integer.decode(strs[index++]);
         } else {
-            throw new Exception("Not enough parameters" + index);
+            throw new Exception("ArduinoSensor() Not enough parameters" + index);
         }
     }
 

@@ -14,7 +14,6 @@ import static tegnonload.Sensor.logger;
  * @author Chris
  */
 public class PiLine {
-    //static String fileTimeStamp = null;
 
     static final Logger logger = Logger.getLogger("PiLine");
 
@@ -35,44 +34,31 @@ public class PiLine {
         logger.addHandler(TegnonLoad.logHandler);
     }
 
-    PiLine(String str) {
-        String[] strs = str.split("[|]");
-        int i = 0;
-        timeStamp = strs[i++];
-        facilityInfo = strs[i++];
-        deviceCommonName = strs[i++];
-        modbusAddr = Integer.decode(strs[i++]);
-        deviceSerialNumber = Integer.decode(strs[i++]);
-        deviceTimeAlive = Integer.decode(strs[i++]);
-        deviceStatus = Integer.decode(strs[i++]);
-        dataReadMode = Integer.decode(strs[i++]);
-        deviceVoltage = Integer.decode(strs[i++]);
-        numberOfAttachedSensors = Integer.decode(strs[i++]);
-        int j = 0;
-        /*
-            if (fileTimeStamp == null) {
-                fileTimeStamp = timeStamp;
-            } else {
-                if (fileTimeStamp.compareTo(timeStamp) > 0)
-                    fileTimeStamp = timeStamp;
-            }
-         */
-        try {
+    PiLine(String[] strs) throws Exception {
+       
+            //String[] strs = str.split("[|]");
+            int i = 0;
+            timeStamp = strs[i++];
+            facilityInfo = strs[i++]; // array index out of bounds   1??
+            deviceCommonName = strs[i++];
+            modbusAddr = Integer.decode(strs[i++]);
+            deviceSerialNumber = Integer.decode(strs[i++]);
+            deviceTimeAlive = Integer.decode(strs[i++]);
+            deviceStatus = Integer.decode(strs[i++]);
+            dataReadMode = Integer.decode(strs[i++]);
+            deviceVoltage = Integer.decode(strs[i++]);
+            numberOfAttachedSensors = Integer.decode(strs[i++]);
+            int j = 0;
+
             while (i < strs.length - 4) {
                 sensors[j] = new ArduinoSensor(strs, i);
                 i += 5;
-                //System.out.println("   " + sensors[j].show());
+               
                 Device d = Device.find(facilityInfo, modbusAddr, deviceSerialNumber);
                 Sensor s = Sensor.find(d, j + 1);
                 s.stat.add(timeStamp, sensors[j].sensorValue);
                 j++;
             }
-        } catch (Exception exc) {
-            System.out.println(exc.toString());
-            exc.printStackTrace();
-
-            logger.log(Level.SEVERE, exc.getMessage(), exc);
-        }
     }
 
     String show() {

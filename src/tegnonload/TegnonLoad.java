@@ -8,6 +8,9 @@ package tegnonload;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.Vector;
@@ -15,6 +18,7 @@ import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 /**
  *
@@ -22,16 +26,20 @@ import java.util.logging.Logger;
  */
 public class TegnonLoad {
 
+    // These two vars allow us to test without detroying data
+    static final boolean DEBUG = false;
+    static final boolean UPDATE_DATA = false;
+
     static final int LOG_SIZE = 1000000;
-    static final int LOG_ROTATION_COUNT = 3;
+    static final int LOG_ROTATION_COUNT = 10;
 
     static final Logger logger = Logger.getLogger("TegnonLoad");
     static Handler logHandler = null;
 
-    //static final String dirName = "C:\\Tegnon\\tegnonefficiencydatagmail.com\\za.tegnon.consol@gmail.com";
+    static final String dirName = "C:\\Tegnon\\tegnonefficiencydatagmail.com\\za.tegnon.consol@gmail.com";
     static final String outName = "C:\\Tegnon\\tegnonefficiencydatagmail.com\\processed";
 
-    static String dirName = "D:/Tegnon/logs/WSSVC2";
+    //static String dirName = "D:/Tegnon/logs/WSSVC2";
     static String messageId;
     Vector<PiLine> piLines = new Vector<PiLine>();
 
@@ -40,6 +48,7 @@ public class TegnonLoad {
     static {
         try {
             logHandler = new FileHandler("TegnonLoad.log", LOG_SIZE, LOG_ROTATION_COUNT);
+            logHandler.setFormatter(new SimpleFormatter());
             logger.addHandler(logHandler);
         } catch (Exception exc) {
             System.out.println("Failed to create a log ... Aaargh");
@@ -94,39 +103,38 @@ public class TegnonLoad {
 
             while (str != null) {
                 //if(br.ready()) {
-                System.out.println("Read line :" + str);
-                PiLine pil = new PiLine(str);
-                piLines.add(pil);
-                //System.out.println(pil.show());
-                //System.out.println(pil.sensors[0].head());
-                /*
-                for (int j = 0; j < pil.numberOfAttachedSensors; j++) {
-                    if (pil.sensors[j] != null) {
-                        System.out.println("   " + pil.sensors[j].show());
-                    } else {
-                        System.out.println("Sensor Null   ");
+                //System.out.println("Read line :" + str);
+                if (str.trim().length() > 0) {
+                    String[] strs = str.split("[|]");
+                    if (strs.length > 10) {
+                        try {
+                            PiLine pil = new PiLine(strs);
+                            piLines.add(pil);
+                        } catch (Exception exc) {
+                            System.out.println("Exception creating PiLine from :" + str);
+                            logger.log(Level.SEVERE, "new PiLine", exc);
+                        }
                     }
                 }
-                
-                
-                
-                 */
+
                 str = br.readLine();
-                //System.out.println("");
-                //for (int i = 0; i < strs.length; i++) {
-                //    System.out.println("[" + i + "] " + strs[i]);
+
             }
             Sensor.writeSQL(messageId);
+            System.out.println(Statistic.getSqlStat());
+            logger.info(Statistic.getSqlStat());
+            
             Sensor.zeroTots();
             // can throw exception
+            String newName = outName + File.separator + f.getName();
             try {
-                if (f.renameTo(new File(outName + f.getName()))) {
-                    System.out.println("File is moved successful! to ");
-                    logger.finest("Success " + f.getAbsolutePath() + " \t" + outName);
-                } else {
-                    System.out.println("File is failed to move!");
-                    logger.info("Failed move " + f.getAbsolutePath() + " \t" + outName);
-                }
+
+                java.nio.file.Files.move(f.toPath(), new File(newName).toPath(),
+                        StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.COPY_ATTRIBUTES);
+
+                System.out.println("File moved successfully to " + newName);
+                logger.finest("Success " + newName);
+
             } catch (Exception exd) {
                 logger.severe("Exception move " + f.getAbsolutePath() + " \t" + outName);
                 logger.log(Level.SEVERE, exd.getMessage(), exd);
@@ -150,6 +158,9 @@ public class TegnonLoad {
                     System.out.println(" " + count++ + " Loaded:" + g.getAbsolutePath());
                 } else {
                     System.out.println(" " + count + " Did not process:" + g.getAbsolutePath());
+                }
+                if (count > 3) {
+                    break;
                 }
             }
         }
@@ -176,19 +187,17 @@ public class TegnonLoad {
         connectSQL();
         Statistic.prepare(conn);
 
-        /*
         Device.load();
         Sensor.load();
-
-        Device.dump();
-        Sensor.dump();
-         */
-        conn = null;
+        if (DEBUG) {
+            Device.dump();
+            Sensor.dump();
+        }
+        //conn = null;
         TegnonLoad x = new TegnonLoad();
 
-        x.runFile(args[0]);
-
-        //x.runDirectory(dirName);
+        //x.runFile(args[0]);
+        x.runDirectory(dirName);
     }
 
 }

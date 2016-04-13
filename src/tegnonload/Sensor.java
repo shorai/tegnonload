@@ -49,13 +49,13 @@ public class Sensor {
             lineId = Integer.parseInt(strs[i++]);
          } catch(Exception exc) {
             lineId = -1; 
-            logger.log(Level.SEVERE,"LineID:" + strs[i-1] + " " + exc.getMessage(), exc);
+            // NULL is quite normal logger.log(Level.SEVERE,"LineID:" + strs[i-1] + " " + exc.getMessage(), exc);
          }
          try {
          netId = Integer.parseInt(strs[i++]);
          } catch(Exception exc) {
             netId = -1; 
-            logger.log(Level.SEVERE,"NetID:" + strs[i-1] + " " + exc.getMessage(), exc);
+            // NULL is quite normal logger.log(Level.SEVERE,"NetID:" + strs[i-1] + " " + exc.getMessage(), exc);
          }
          try{
              columnNumber = Integer.parseInt(strs[i++]);
