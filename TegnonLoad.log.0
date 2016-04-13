@@ -2,106 +2,47 @@
 <!DOCTYPE log SYSTEM "logger.dtd">
 <log>
 <record>
-  <date>2016-04-13T15:50:33</date>
-  <millis>1460555433651</millis>
+  <date>2016-04-13T15:18:25</date>
+  <millis>1460560705971</millis>
   <sequence>0</sequence>
   <logger>TegnonLoad</logger>
-  <level>SEVERE</level>
+  <level>INFO</level>
   <class>tegnonload.TegnonLoad</class>
-  <method>connectSQL</method>
+  <method>runFile</method>
   <thread>1</thread>
-  <message>The TCP/IP connection to the host localhost, port 1433 has failed. Error: "Connection refused: connect. Verify the connection properties. Make sure that an instance of SQL Server is running on the host and accepting TCP/IP connections at the port. Make sure that TCP connections to the port are not blocked by a firewall.".</message>
-  <exception>
-    <message>com.microsoft.sqlserver.jdbc.SQLServerException: The TCP/IP connection to the host localhost, port 1433 has failed. Error: "Connection refused: connect. Verify the connection properties. Make sure that an instance of SQL Server is running on the host and accepting TCP/IP connections at the port. Make sure that TCP connections to the port are not blocked by a firewall.".</message>
-    <frame>
-      <class>com.microsoft.sqlserver.jdbc.SQLServerException</class>
-      <method>makeFromDriverError</method>
-      <line>191</line>
-    </frame>
-    <frame>
-      <class>com.microsoft.sqlserver.jdbc.SQLServerException</class>
-      <method>ConvertConnectExceptionToSQLServerException</method>
-      <line>242</line>
-    </frame>
-    <frame>
-      <class>com.microsoft.sqlserver.jdbc.SocketFinder</class>
-      <method>findSocket</method>
-      <line>2363</line>
-    </frame>
-    <frame>
-      <class>com.microsoft.sqlserver.jdbc.TDSChannel</class>
-      <method>open</method>
-      <line>545</line>
-    </frame>
-    <frame>
-      <class>com.microsoft.sqlserver.jdbc.SQLServerConnection</class>
-      <method>connectHelper</method>
-      <line>1789</line>
-    </frame>
-    <frame>
-      <class>com.microsoft.sqlserver.jdbc.SQLServerConnection</class>
-      <method>login</method>
-      <line>1454</line>
-    </frame>
-    <frame>
-      <class>com.microsoft.sqlserver.jdbc.SQLServerConnection</class>
-      <method>connectInternal</method>
-      <line>1285</line>
-    </frame>
-    <frame>
-      <class>com.microsoft.sqlserver.jdbc.SQLServerConnection</class>
-      <method>connect</method>
-      <line>700</line>
-    </frame>
-    <frame>
-      <class>com.microsoft.sqlserver.jdbc.SQLServerDriver</class>
-      <method>connect</method>
-      <line>1131</line>
-    </frame>
-    <frame>
-      <class>java.sql.DriverManager</class>
-      <method>getConnection</method>
-      <line>664</line>
-    </frame>
-    <frame>
-      <class>java.sql.DriverManager</class>
-      <method>getConnection</method>
-      <line>247</line>
-    </frame>
-    <frame>
-      <class>tegnonload.TegnonLoad</class>
-      <method>connectSQL</method>
-      <line>77</line>
-    </frame>
-    <frame>
-      <class>tegnonload.TegnonLoad</class>
-      <method>main</method>
-      <line>176</line>
-    </frame>
-  </exception>
+  <message>Failed move C:\Tegnon\tegnonefficiencydatagmail.com\za.tegnon.consol@gmail.com\2016-03-02-073001-sensordata(35550ef0-ca09-4efb-b88b-4a7a80d8c13b).txt 	C:\Tegnon\tegnonefficiencydatagmail.com\processed</message>
 </record>
 <record>
-  <date>2016-04-13T15:50:33</date>
-  <millis>1460555433682</millis>
+  <date>2016-04-13T15:18:26</date>
+  <millis>1460560706002</millis>
   <sequence>1</sequence>
-  <logger>Stitistic</logger>
-  <level>SEVERE</level>
-  <class>tegnonload.Statistic</class>
-  <method>prepare</method>
+  <logger>TegnonLoad</logger>
+  <level>INFO</level>
+  <class>tegnonload.TegnonLoad</class>
+  <method>runFile</method>
   <thread>1</thread>
-  <message>Statistic():null</message>
-  <exception>
-    <message>java.lang.NullPointerException</message>
-    <frame>
-      <class>tegnonload.Statistic</class>
-      <method>prepare</method>
-      <line>55</line>
-    </frame>
-    <frame>
-      <class>tegnonload.TegnonLoad</class>
-      <method>main</method>
-      <line>177</line>
-    </frame>
-  </exception>
+  <message>Failed move C:\Tegnon\tegnonefficiencydatagmail.com\za.tegnon.consol@gmail.com\2016-03-02-073001-sensordata(71511352-97c4-4173-9528-e6e0edf80925).txt 	C:\Tegnon\tegnonefficiencydatagmail.com\processed</message>
+</record>
+<record>
+  <date>2016-04-13T15:18:26</date>
+  <millis>1460560706033</millis>
+  <sequence>2</sequence>
+  <logger>TegnonLoad</logger>
+  <level>INFO</level>
+  <class>tegnonload.TegnonLoad</class>
+  <method>runFile</method>
+  <thread>1</thread>
+  <message>Failed move C:\Tegnon\tegnonefficiencydatagmail.com\za.tegnon.consol@gmail.com\2016-03-02-080001-sensordata(08ef7cfc-368f-4098-a4b5-737fb2a54e3a).txt 	C:\Tegnon\tegnonefficiencydatagmail.com\processed</message>
+</record>
+<record>
+  <date>2016-04-13T15:18:26</date>
+  <millis>1460560706064</millis>
+  <sequence>3</sequence>
+  <logger>TegnonLoad</logger>
+  <level>INFO</level>
+  <class>tegnonload.TegnonLoad</class>
+  <method>runFile</method>
+  <thread>1</thread>
+  <message>Failed move C:\Tegnon\tegnonefficiencydatagmail.com\za.tegnon.consol@gmail.com\2016-03-02-080001-sensordata(22272b51-e5a9-41d5-a2b1-3540998aa38e).txt 	C:\Tegnon\tegnonefficiencydatagmail.com\processed</message>
 </record>
 </log>

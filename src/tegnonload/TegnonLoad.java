@@ -23,15 +23,15 @@ import java.util.logging.Logger;
 public class TegnonLoad {
 
     static final int LOG_SIZE = 1000000;
-    static final int LOG_ROTATION_COUNT = 3;
+    static final int LOG_ROTATION_COUNT = 10;
 
     static final Logger logger = Logger.getLogger("TegnonLoad");
     static Handler logHandler = null;
 
-    //static final String dirName = "C:\\Tegnon\\tegnonefficiencydatagmail.com\\za.tegnon.consol@gmail.com";
+    static final String dirName = "C:\\Tegnon\\tegnonefficiencydatagmail.com\\za.tegnon.consol@gmail.com";
     static final String outName = "C:\\Tegnon\\tegnonefficiencydatagmail.com\\processed";
 
-    static String dirName = "D:/Tegnon/logs/WSSVC2";
+    //static String dirName = "D:/Tegnon/logs/WSSVC2";
     static String messageId;
     Vector<PiLine> piLines = new Vector<PiLine>();
 
@@ -81,6 +81,8 @@ public class TegnonLoad {
             exc.printStackTrace();
             logger.log(Level.SEVERE, exc.getMessage(), exc);
         }
+        
+     
 
     }
 
@@ -94,9 +96,11 @@ public class TegnonLoad {
 
             while (str != null) {
                 //if(br.ready()) {
-                System.out.println("Read line :" + str);
-                PiLine pil = new PiLine(str);
-                piLines.add(pil);
+                //System.out.println("Read line :" + str);
+                if (str.trim().length() > 0) {
+                    PiLine pil = new PiLine(str);
+                    piLines.add(pil);
+                }
                 //System.out.println(pil.show());
                 //System.out.println(pil.sensors[0].head());
                 /*
@@ -151,6 +155,9 @@ public class TegnonLoad {
                 } else {
                     System.out.println(" " + count + " Did not process:" + g.getAbsolutePath());
                 }
+                if (count > 3) {
+                    break;
+                }
             }
         }
 
@@ -176,19 +183,17 @@ public class TegnonLoad {
         connectSQL();
         Statistic.prepare(conn);
 
-        /*
         Device.load();
         Sensor.load();
-
+        /*
         Device.dump();
         Sensor.dump();
          */
         conn = null;
         TegnonLoad x = new TegnonLoad();
 
-        x.runFile(args[0]);
-
-        //x.runDirectory(dirName);
+        //x.runFile(args[0]);
+        x.runDirectory(dirName);
     }
 
 }

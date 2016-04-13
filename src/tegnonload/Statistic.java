@@ -27,7 +27,7 @@ public class Statistic {
     static final String insertSql = "insert into SensorDataHalfHour(AttachmentID, sensorId, startTime, sensorType, recordCount, sensorValue,maximum, minimum, sumOfSquares) values(%,%,%,%,%,%,%,%,%)";
     static final String updateSql = "update SensorDataHalfHour set attachmentID=%,  recordCount=%, sensorValue=%,maximum=%, minimum=%, sumOfSquares=% where sensorId=% and startTime=% and sensorType=%,";
     static final String findSql = "select count(*) from SensorDataHalfHour where sensorID=% and startTime=% and sensorType=%";
-    static final DateFormat df = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SS");
+    static final DateFormat df = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     Sensor sensor;
     java.sql.Date startTime;
