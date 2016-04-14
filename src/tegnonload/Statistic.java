@@ -24,18 +24,19 @@ public class Statistic {
     static PreparedStatement updateStatement = null;
     static PreparedStatement findStatement = null;
 
-    static final String insertSql = "insert into SensorDataHalfHour(AttachmentID, sensorId, startTime, sensorType, recordCount, sensorValue,maximum, minimum, sumOfSquares) values(%,%,%,%,%,%,%,%,%)";
-    static final String updateSql = "update SensorDataHalfHour set attachmentID=%,  recordCount=%, sensorValue=%,maximum=%, minimum=%, sumOfSquares=% where sensorId=% and startTime=% and sensorType=%,";
-    static final String findSql = "select count(*) from SensorDataHalfHour where sensorID=% and startTime=% and sensorType=%";
-    static final DateFormat df = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SS");
+    static final String insertSql = "insert into SensorDataHalfHour(AttachmentID, sensorId, startTime, sensorType, recordCount, sensorValue,maximum, minimum, sumOfSquares) values(?,?,?,?,?,?,?,?,?)";
+    static final String updateSql = "update SensorDataHalfHour set attachmentID=?,  recordCount=?, sensorValue=?,maximum=?, minimum=?, sumOfSquares=? where sensorId=? and startTime=? and sensorType=?";
+    static final String findSql = "select count(*) from SensorDataHalfHour where sensorID=? and startTime=? and sensorType=?";
+    static final DateFormat df = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     static int numInserted = 0;
     static int numUpdated = 0;
     static int numErrors = 0;
 
     Sensor sensor;
-    java.sql.Date startTime;
-    java.sql.Date endTime;
+    //java.sql.Date startTime;
+    java.sql.Timestamp startTime;
+    java.sql.Timestamp endTime;
 
     Double first;
     Double last;
@@ -62,7 +63,7 @@ public class Statistic {
             findStatement = TegnonLoad.conn.prepareStatement(findSql);
 
         } catch (Exception exc) {
-            System.out.println("Statistic():" + exc.getMessage());
+            //System.out.println("Statistic():" + exc.getMessage());
             logger.log(Level.SEVERE, "Statistic():" + exc.getMessage(), exc);
             TegnonLoad.conn = null;
         }
@@ -80,14 +81,14 @@ public class Statistic {
         numInserted = 0;
         numUpdated = 0;
         numErrors = 0;
-        
+
     }
 
     public void add(String time, Double value) throws Exception {
 
         java.util.Date date = df.parse(time);
 
-        java.sql.Date sDate = new java.sql.Date(date.getTime());
+        java.sql.Timestamp sDate = new java.sql.Timestamp(date.getTime());
 
         if (count == 0) {
             first = value;
@@ -119,29 +120,29 @@ public class Statistic {
     }
 
     String dump() {
-        return sensor.key() + "\t" + startTime + "\t" + endTime + "\t"
-                + first + "\t" + last + "\t" + sum + "\t"
-                + max + "\t" + min + "\t" + count;
+        return sensor.key() + "\t" + df.format(startTime) + "\t" + df.format(endTime) 
+                + "\t First:"  + first + "\tLast:" + last + "\tSum:" + sum 
+                + "\tMax:" + max + "\tMin:" + min + "\tCount:" + count;
     }
 
-    void toDb(String messageId, Integer sensorId, java.sql.Date date, Integer sensorType, Integer recordCount,
+    void toDb(String messageId, Integer sensorId, java.sql.Timestamp date, Integer sensorType, Integer recordCount,
             Double sensorValue, Double sumOfSquares, Double max, Double min) {
 
         try {
             // look for record on DB
             findStatement.setInt(1, sensorId);
-            findStatement.setDate(2, date);
+            findStatement.setTimestamp(2, date);
             findStatement.setInt(3, sensorType);
 
             ResultSet rs = findStatement.executeQuery();
             rs.next();
             int count = rs.getInt(1);
-            int i = 0;
+            int i = 1;
             if (count == 0) {
                 if (TegnonLoad.UPDATE_DATA) {
                     insertStatement.setString(i++, messageId);
                     insertStatement.setInt(i++, sensorId);
-                    insertStatement.setDate(i++, date);
+                    insertStatement.setTimestamp(i++, date);
                     insertStatement.setInt(i++, sensorType);
                     insertStatement.setInt(i++, recordCount);
                     insertStatement.setDouble(i++, sensorValue);
@@ -149,9 +150,10 @@ public class Statistic {
                     insertStatement.setDouble(i++, max);
                     insertStatement.setDouble(i++, min);
                     insertStatement.executeQuery();
+                    logger.log(Level.FINEST,"InsertRecord " + dump());
                 } else {
-                    System.out.println("InsertRecord " + sensorId + " " + df.format(date) + " " + sensorType);
-                    logger.info("InsertRecord " + sensorId + " " + df.format(date) + " " + sensorType);
+                 logger.log(Level.INFO,"InsertRecord " + dump());
+                    
                 }
                 numInserted++;
 
@@ -165,18 +167,18 @@ public class Statistic {
                     updateStatement.setDouble(i++, min);
 
                     updateStatement.setInt(i++, sensorId);
-                    updateStatement.setDate(i++, date);
+                    updateStatement.setTimestamp(i++, date);
                     updateStatement.setInt(i++, sensorType);
 
                     updateStatement.executeQuery();
+                    logger.log(Level.FINEST,"Updated Record " + dump());
                 } else {
-                    System.out.println("UpdateRecord " + sensorId + " " + df.format(date) + " " + sensorType);
-                    logger.info("UpdateRecord " + sensorId + " " + df.format(date) + " " + sensorType);
+                    logger.log(Level.INFO,"UpdateRecord " + dump());
                 }
                 numUpdated++;
             }
         } catch (Exception exc) {
-            System.out.println("SQL error " + exc.getMessage());
+            logger.log(Level.SEVERE,"Statistic.toDB():SQL error "+exc.getMessage(),exc);
             numErrors++;
         }
 
