@@ -46,16 +46,28 @@ public class Sensor {
          unitTID = Integer.parseInt(strs[i++]);
          measureTID =  Integer.parseInt(strs[i++]);
          try {
-            lineId = Integer.parseInt(strs[i++]);
+            // NULL is quite normal logger.log(Level.SEVERE,"LineID:" + strs[i-1] + " " + exc.getMessage(), exc);
+            if (strs[i].equals("NULL")) {
+                 lineId = -1;
+                 i++;
+             } else {
+                lineId = Integer.parseInt(strs[i++]);
+             }
          } catch(Exception exc) {
             lineId = -1; 
-            // NULL is quite normal logger.log(Level.SEVERE,"LineID:" + strs[i-1] + " " + exc.getMessage(), exc);
+            
          }
          try {
-         netId = Integer.parseInt(strs[i++]);
+             // NULL is quite normal logger.log(Level.SEVERE,"NetID:" + strs[i-1] + " " + exc.getMessage(), exc);
+             if (strs[i].equals("NULL")) {
+                 netId = -1;
+                 i++;
+             } else {
+                netId = Integer.parseInt(strs[i++]);
+             }
          } catch(Exception exc) {
             netId = -1; 
-            // NULL is quite normal logger.log(Level.SEVERE,"NetID:" + strs[i-1] + " " + exc.getMessage(), exc);
+            
          }
          try{
              columnNumber = Integer.parseInt(strs[i++]);
@@ -92,7 +104,7 @@ public class Sensor {
     
    
     
-    static void writeSQL(String messageId) {
+    static void writeSQL(Integer messageId) {
         //System.out.println("******************************************************** writeSQL for " + sensors.size());
         for (Sensor s : sensors.values()) {
             if (s.typeTID == 20) {

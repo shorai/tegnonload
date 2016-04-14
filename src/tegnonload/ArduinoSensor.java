@@ -5,6 +5,7 @@
  */
 package tegnonload;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -25,15 +26,24 @@ public class ArduinoSensor {
         logger.addHandler(TegnonLoad.logHandler);
     }
 
-    ArduinoSensor(String[] strs, int index) throws Exception {
+    ArduinoSensor( int lineNumber, String[] strs, int index) throws Exception {
         if (strs.length >= index + 4) {
             sensorType = Integer.decode(strs[index++]);
             sensorStatus = Integer.decode(strs[index++]);
-            sensorValue = Double.parseDouble(strs[index++]);
+            try {
+                sensorValue = Double.parseDouble(strs[index++]);
+            } catch (Exception exc) {
+                logger.log(Level.SEVERE, "LineNumber "+ (lineNumber+1) + ":" + index, exc);
+                if (strs[index].equals("T100")) {
+                    sensorValue = -100.0;
+                } else {
+                    sensorValue = -999.0;
+                }
+            }
             sensorUnits = Integer.decode(strs[index++]);
             measurmentType = Integer.decode(strs[index++]);
         } else {
-            throw new Exception("ArduinoSensor() Not enough parameters" + index);
+            throw new Exception("ArduinoSensor() Not enough parameters Line " +lineNumber + ":" + index);
         }
     }
 

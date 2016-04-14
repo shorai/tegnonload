@@ -125,7 +125,7 @@ public class Statistic {
                 + "\tMax:" + max + "\tMin:" + min + "\tCount:" + count;
     }
 
-    void toDb(String messageId, Integer sensorId, java.sql.Timestamp date, Integer sensorType, Integer recordCount,
+    void toDb(Integer messageId, Integer sensorId, java.sql.Timestamp date, Integer sensorType, Integer recordCount,
             Double sensorValue, Double sumOfSquares, Double max, Double min) {
 
         try {
@@ -140,7 +140,7 @@ public class Statistic {
             int i = 1;
             if (count == 0) {
                 if (TegnonLoad.UPDATE_DATA) {
-                    insertStatement.setString(i++, messageId);
+                    insertStatement.setInt(i++, messageId);
                     insertStatement.setInt(i++, sensorId);
                     insertStatement.setTimestamp(i++, date);
                     insertStatement.setInt(i++, sensorType);
@@ -159,7 +159,7 @@ public class Statistic {
 
             } else {
                 if (TegnonLoad.UPDATE_DATA) {
-                    updateStatement.setString(i++, messageId);
+                    updateStatement.setInt(i++, messageId);
                     updateStatement.setInt(i++, recordCount);
                     updateStatement.setDouble(i++, sensorValue);
                     updateStatement.setDouble(i++, sumOfSquares);
@@ -184,13 +184,13 @@ public class Statistic {
 
     }
 
-    void writeFlowSQL(String messageId) {
+    void writeFlowSQL(Integer messageId) {
         if (sum > 0.00) {
             toDb(messageId, sensor.id, startTime, sensor.typeTID, count, sum, max, min, sumSquares);
         }
     }
 
-    void writeEnergySQL(String messageId) {
+    void writeEnergySQL(Integer messageId) {
 
         Double val = last - first;
         if (val < 0) {

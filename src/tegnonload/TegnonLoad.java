@@ -124,7 +124,7 @@ public class TegnonLoad {
 
             }
             br.close();
-            Sensor.writeSQL(messageId);
+            Sensor.writeSQL(-1); //messageId);
             System.out.println(Statistic.getSqlStat());
             logger.info(Statistic.getSqlStat());
             
@@ -163,7 +163,7 @@ public class TegnonLoad {
                 } else {
                     System.out.println(" " + count + " Did not process:" + g.getAbsolutePath());
                 }
-                if (count > NUMBER_OF_FILES_TO_RUN ) {
+                if (count >= NUMBER_OF_FILES_TO_RUN ) {
                     break;
                 }
             }

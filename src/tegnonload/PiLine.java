@@ -51,7 +51,7 @@ public class PiLine {
             int j = 0;
 
             while (i < strs.length - 4) {
-                sensors[j] = new ArduinoSensor(strs, i);
+                sensors[j] = new ArduinoSensor(j,strs, i);
                 i += 5;
                
                 Device d = Device.find(facilityInfo, modbusAddr, deviceSerialNumber);
