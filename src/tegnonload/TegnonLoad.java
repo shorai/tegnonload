@@ -32,6 +32,9 @@ public class TegnonLoad {
 
     static final int LOG_SIZE = 1000000;
     static final int LOG_ROTATION_COUNT = 10;
+    
+    static final int NUMBER_OF_FILES_TO_RUN = 1;
+    
 
     static final Logger logger = Logger.getLogger("TegnonLoad");
     static Handler logHandler = null;
@@ -56,7 +59,7 @@ public class TegnonLoad {
         }
 
     }
-
+/*
     static void connect() {
         try {
             String driver = "sun.jdbc.odbc.JdbcOdbcDriver";
@@ -70,7 +73,7 @@ public class TegnonLoad {
         }
 
     }
-
+*/
     static public void connectSQL() {
         // Create a variable for the connection string.
         String username = "javaUser1";
@@ -78,7 +81,6 @@ public class TegnonLoad {
         String connectionUrl = "jdbc:sqlserver://localhost:1433;"
                 + "databaseName=TegnonEfficiency";
 
-//			"databaseName=TegnonEfficiency;integratedSecurity=true;";
         // Declare the JDBC objects.
         try {
             // Establish the connection.
@@ -89,6 +91,7 @@ public class TegnonLoad {
         } catch (Exception exc) {
             exc.printStackTrace();
             logger.log(Level.SEVERE, exc.getMessage(), exc);
+            System.exit(3);
         }
 
     }
@@ -120,6 +123,7 @@ public class TegnonLoad {
                 str = br.readLine();
 
             }
+            br.close();
             Sensor.writeSQL(messageId);
             System.out.println(Statistic.getSqlStat());
             logger.info(Statistic.getSqlStat());
@@ -128,15 +132,15 @@ public class TegnonLoad {
             // can throw exception
             String newName = outName + File.separator + f.getName();
             try {
-
+                    // CopyOptions not all implemented or working, ATOMIC excludes others
                 java.nio.file.Files.move(f.toPath(), new File(newName).toPath(),
-                        StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.COPY_ATTRIBUTES);
+                        StandardCopyOption.REPLACE_EXISTING); //, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.COPY_ATTRIBUTES);
 
                 System.out.println("File moved successfully to " + newName);
-                logger.finest("Success " + newName);
+                logger.finest("File moved successfully to " + newName);
 
             } catch (Exception exd) {
-                logger.severe("Exception move " + f.getAbsolutePath() + " \t" + outName);
+                logger.severe("Exception move " + f.getAbsolutePath() + " \t" + newName);
                 logger.log(Level.SEVERE, exd.getMessage(), exd);
             }
         } catch (Exception exc) {
@@ -159,7 +163,7 @@ public class TegnonLoad {
                 } else {
                     System.out.println(" " + count + " Did not process:" + g.getAbsolutePath());
                 }
-                if (count > 3) {
+                if (count > NUMBER_OF_FILES_TO_RUN ) {
                     break;
                 }
             }
@@ -172,12 +176,14 @@ public class TegnonLoad {
      */
     public static void main(String[] args) {
         // TODO code application logic here
+        /*
         if (args.length > 0) {
             System.out.println(args[0]);
             for (int i = 0; i < args.length; i++) {
                 System.out.println("" + i + "  " + args[i]);
             }
         }
+*/
         try {
             File f = new File(outName);
             f.mkdirs();
