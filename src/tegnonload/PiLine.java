@@ -55,16 +55,20 @@ public class PiLine {
                 sensors[j] = as;
                 i += 5;
                
-                
+               try { 
                 Device d = Device.find(facilityInfo, modbusAddr, deviceSerialNumber);
      
                 Sensor s = Sensor.find(d, j + 1,as.sensorType);
-                if (as.sensorType == 20) {
+               /* if (as.sensorType == 20) {
                     logger.info("Energy Sensor " + d.facilityInfo + ":" + d.name + " Sensor:" + s.id + " Key:" +s.key() + " Type:" + as.sensorType + " Value:" + as.sensorValue 
                             + " SensorIs:"+ s.key() + " Sensors.Type:" + s.typeTID);
-                } 
+                }
+*/
                 s.stat.add(timeStamp, as.sensorValue);
                 j++;
+               } catch (Exception exc) {
+                   logger.log(Level.SEVERE,"Cant add stat "+ strs,exc);
+               }
             }
     }
 

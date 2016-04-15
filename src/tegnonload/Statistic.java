@@ -156,7 +156,7 @@ public class Statistic {
                     insertStatement.setDouble(i++, max);
                     insertStatement.setDouble(i++, min);
                     insertStatement.executeUpdate();
-                    logger.log(Level.FINEST,"InsertRecord " + dump());
+                   // logger.log(Level.FINEST,"InsertRecord " + dump());
                 } else {
                  logger.log(Level.INFO,"Dummy InsertRecord " + dump());
                     
@@ -177,7 +177,7 @@ public class Statistic {
                     updateStatement.setInt(i++, sensorType);
 
                     updateStatement.executeUpdate();
-                    logger.log(Level.FINEST,"Updated Record " + dump());
+                    //logger.log(Level.FINEST,"Updated Record " + dump());
                 } else {
                     logger.log(Level.INFO,"Dummy UpdateRecord " + dump());
                 }
@@ -205,11 +205,11 @@ public class Statistic {
         }
         if (val > 0.00) {
             toDb(messageId, sensor.id, startTime, 19, 60, val, last, first, val * val);
-            logger.log(Level.INFO,"STat.writeEnergy  " +  dump() + " Energy Calc:" + val);
+            logger.log(Level.INFO,"Stat.writeen Energy  " +  dump() + " Energy Calc:" + val);
         } else  {
-            //if (val <= 0.00)
+            if (val < 1.00)
             try { //if (startTime != null)
-                logger.log(Level.WARNING,"Stat.writeEnergy less than zero " +  dump()+ " " + val);
+                logger.log(Level.WARNING,"Stat.writeEnergy less than zero " + val + " " +  dump());
             } catch (Exception exx) {
                     logger.severe("Stat.writeEnergy Exception"+exx.getMessage());
                             

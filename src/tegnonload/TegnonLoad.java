@@ -33,7 +33,7 @@ public class TegnonLoad {
     static final int LOG_SIZE = 1000000;
     static final int LOG_ROTATION_COUNT = 10;
 
-    static final int NUMBER_OF_FILES_TO_RUN =20000;
+    static final int NUMBER_OF_FILES_TO_RUN =10000;   // @TODO: Crashed 15 April 2016 on 14K files of about 20K
 
     static final Logger logger = Logger.getLogger("TegnonLoad");
     static Handler logHandler = null;
@@ -103,7 +103,8 @@ public class TegnonLoad {
             FileReader fr = new FileReader(f);
             BufferedReader br = new BufferedReader(fr);
             String str = br.readLine();
-
+            logger.info("Opening File "+fileName);
+            
             while (str != null) {
                 //if(br.ready()) {
                 //System.out.println("Read line :" + str);
