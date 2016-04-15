@@ -29,6 +29,9 @@ public class ArduinoSensor {
     ArduinoSensor( int lineNumber, String[] strs, int index) throws Exception {
         if (strs.length >= index + 4) {
             sensorType = Integer.decode(strs[index++]);
+            //if (sensorType==20) {
+             //   sensorType = 19;
+            //}
             sensorStatus = Integer.decode(strs[index++]);
             try {
                 sensorValue = Double.parseDouble(strs[index++]);
