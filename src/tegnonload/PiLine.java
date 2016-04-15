@@ -51,12 +51,19 @@ public class PiLine {
             int j = 0;
 
             while (i < strs.length - 4) {
-                sensors[j] = new ArduinoSensor(j,strs, i);
+                ArduinoSensor as = new ArduinoSensor(j,strs, i);
+                sensors[j] = as;
                 i += 5;
                
+                
                 Device d = Device.find(facilityInfo, modbusAddr, deviceSerialNumber);
-                Sensor s = Sensor.find(d, j + 1);
-                s.stat.add(timeStamp, sensors[j].sensorValue);
+     
+                Sensor s = Sensor.find(d, j + 1,as.sensorType);
+                if (as.sensorType == 20) {
+                    logger.info("Energy Sensor " + d.facilityInfo + ":" + d.name + " Sensor:" + s.id + " Key:" +s.key() + " Type:" + as.sensorType + " Value:" + as.sensorValue 
+                            + " SensorIs:"+ s.key() + " Sensors.Type:" + s.typeTID);
+                } 
+                s.stat.add(timeStamp, as.sensorValue);
                 j++;
             }
     }

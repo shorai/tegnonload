@@ -79,12 +79,12 @@ public class Sensor {
   }
     
     String key() {
-        return ""+device.key() + "," + columnNumber;
+        return ""+device.key() + "," + columnNumber+ "," + typeTID;
     }
     
-    static final Sensor find(Device dev, int columnNumber) {
+    static final Sensor find(Device dev, int columnNumber, int sensorType) {
         
-        return sensors.get(""+dev.key() + "," + columnNumber);
+        return sensors.get(""+dev.key() + "," + columnNumber + "," + sensorType);
     }
     static void zeroTots() {
         for(Sensor s: sensors.values()) {
@@ -107,7 +107,7 @@ public class Sensor {
     static void writeSQL(Integer messageId) {
         //System.out.println("******************************************************** writeSQL for " + sensors.size());
         for (Sensor s : sensors.values()) {
-            if (s.typeTID == 20) {
+            if ((s.typeTID == 20) || (s.typeTID ==20)) {
                 s.stat.writeEnergySQL(messageId);
             } else {
                 s.stat.writeFlowSQL(messageId);
