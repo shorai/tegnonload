@@ -120,6 +120,12 @@ public class Statistic {
     }
 
     String dump() {
+        String timeStr = startTime.toString();
+        try {
+            timeStr = df.format(startTime);
+        } catch (Exception ext) {
+            logger.severe(timeStr + " df.format " + ext.getMessage() );
+        }
         return sensor.key() + "\t" + df.format(startTime) + "\t" + df.format(endTime) 
                 + "\t First:"  + first + "\tLast:" + last + "\tSum:" + sum 
                 + "\tMax:" + max + "\tMin:" + min + "\tCount:" + count;
@@ -149,10 +155,10 @@ public class Statistic {
                     insertStatement.setDouble(i++, sumOfSquares);
                     insertStatement.setDouble(i++, max);
                     insertStatement.setDouble(i++, min);
-                    insertStatement.executeQuery();
+                    insertStatement.executeUpdate();
                     logger.log(Level.FINEST,"InsertRecord " + dump());
                 } else {
-                 logger.log(Level.INFO,"InsertRecord " + dump());
+                 logger.log(Level.INFO,"Dummy InsertRecord " + dump());
                     
                 }
                 numInserted++;
@@ -170,10 +176,10 @@ public class Statistic {
                     updateStatement.setTimestamp(i++, date);
                     updateStatement.setInt(i++, sensorType);
 
-                    updateStatement.executeQuery();
+                    updateStatement.executeUpdate();
                     logger.log(Level.FINEST,"Updated Record " + dump());
                 } else {
-                    logger.log(Level.INFO,"UpdateRecord " + dump());
+                    logger.log(Level.INFO,"Dummy UpdateRecord " + dump());
                 }
                 numUpdated++;
             }
@@ -187,6 +193,7 @@ public class Statistic {
     void writeFlowSQL(Integer messageId) {
         if (sum > 0.00) {
             toDb(messageId, sensor.id, startTime, sensor.typeTID, count, sum, max, min, sumSquares);
+           //  logger.log(Level.INFO,"STat.writeFlow  " +  dump());
         }
     }
 
@@ -197,7 +204,16 @@ public class Statistic {
             val += 32767.0;
         }
         if (val > 0.00) {
-            toDb(messageId, sensor.id, startTime, 19, 1, val, last, first, val * val);
+            toDb(messageId, sensor.id, startTime, 19, 60, val, last, first, val * val);
+            logger.log(Level.INFO,"STat.writeEnergy  " +  dump() + " Energy Calc:" + val);
+        } else  {
+            //if (val <= 0.00)
+            try { //if (startTime != null)
+                logger.log(Level.WARNING,"Stat.writeEnergy less than zero " +  dump()+ " " + val);
+            } catch (Exception exx) {
+                    logger.severe("Stat.writeEnergy Exception"+exx.getMessage());
+                            
+                    }
         }
     }
 
