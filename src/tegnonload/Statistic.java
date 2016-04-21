@@ -47,6 +47,7 @@ public class Statistic {
     int count;
 
     static {
+         logger.setLevel(Level.INFO);
         logger.addHandler(TegnonLoad.logHandler);
     }
 
@@ -75,7 +76,7 @@ public class Statistic {
         sum = 0.0;
         sumSquares = 0.0;
         max = 0.0;
-        min = 0.0;
+        min = -1.0;
         count = 0;
 
         numInserted = 0;
@@ -92,7 +93,8 @@ public class Statistic {
 
         if (count == 0) {
             first = value;
-            min = value;
+            if (value > 0.0) 
+                min = value;
             startTime = sDate;
             endTime = sDate;
         } else {
@@ -109,8 +111,10 @@ public class Statistic {
         if (max < value) {
             max = value;
         }
-        if (min > value) {
-            min = value;
+        if (value > 0.0) { 
+            if ((min > value) ||  (min <= -1.0)) {
+                min = value;
+            }
         }
         count++;
     }
@@ -156,7 +160,7 @@ public class Statistic {
                     insertStatement.setDouble(i++, max);
                     insertStatement.setDouble(i++, min);
                     insertStatement.executeUpdate();
-                   // logger.log(Level.FINEST,"InsertRecord " + dump());
+                    logger.log(Level.FINE,"InsertRecord " + dump());
                 } else {
                  logger.log(Level.INFO,"Dummy InsertRecord " + dump());
                     
@@ -168,15 +172,21 @@ public class Statistic {
                     updateStatement.setInt(i++, messageId);
                     updateStatement.setInt(i++, recordCount);
                     updateStatement.setDouble(i++, sensorValue);
-                    updateStatement.setDouble(i++, sumOfSquares);
                     updateStatement.setDouble(i++, max);
                     updateStatement.setDouble(i++, min);
-
+                    updateStatement.setDouble(i++, sumOfSquares);
+                    
                     updateStatement.setInt(i++, sensorId);
                     updateStatement.setTimestamp(i++, date);
                     updateStatement.setInt(i++, sensorType);
 
-                    updateStatement.executeUpdate();
+                    int cnt = updateStatement.executeUpdate();
+                    
+                    if (cnt==1) {
+                        logger.log(Level.FINE," One Energy Record updated:" + dump());
+                    } else {
+                        logger.log(Level.INFO,"Energy Record not updated["+ cnt + "]" + dump());
+                    }
                     //logger.log(Level.FINEST,"Updated Record " + dump());
                 } else {
                     logger.log(Level.INFO,"Dummy UpdateRecord " + dump());
@@ -193,7 +203,7 @@ public class Statistic {
     void writeFlowSQL(Integer messageId) {
         if (sum > 0.00) {
             toDb(messageId, sensor.id, startTime, sensor.typeTID, count, sum, max, min, sumSquares);
-           //  logger.log(Level.INFO,"STat.writeFlow  " +  dump());
+             logger.log(Level.INFO,"Stat.writeFlow  " +  dump());
         }
     }
 
@@ -204,17 +214,20 @@ public class Statistic {
             val += 32767.0;
         }
         if (val > 0.00) {
-            toDb(messageId, sensor.id, startTime, 19, 60, val, last, first, val * val);
-            logger.log(Level.INFO,"Stat.writeen Energy  " +  dump() + " Energy Calc:" + val);
-        } else  {
-            if (val < 1.00)
+            this.sum=val;
+            this.sumSquares = val*val;
+            toDb(messageId, sensor.id, startTime, 19, 60, val, val * val, last, first );
+            logger.log(Level.INFO,"Stat.written Energy  " +  dump() + " Energy Calc:" + val);
+        } /*else  {
+            
+            if (val < -1.00)
             try { //if (startTime != null)
-                logger.log(Level.WARNING,"Stat.writeEnergy less than zero " + val + " " +  dump());
+               // logger.log(Level.WARNING,"Stat.writeEnergy less than zero " + val + " " +  dump());
             } catch (Exception exx) {
                     logger.severe("Stat.writeEnergy Exception"+exx.getMessage());
                             
                     }
-        }
+        } */
     }
 
 }
