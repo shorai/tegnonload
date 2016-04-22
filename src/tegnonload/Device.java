@@ -5,7 +5,13 @@
  */
 package tegnonload;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -13,7 +19,16 @@ import java.util.logging.Logger;
  * @author Chris
  */
 public class Device {
-
+    
+    static String insertSQL = "insert into Device(facilityInfo,DeviceCommonName,modbusAddr,DeviceSerialNumber,reporting,NumberOfAttachedSensors) values(?,?,?,?,?,?)";
+    PreparedStatement insertStatement = null;
+    
+    static String findByIdSQL = "select DEviceId from DEvice where facilityInfo=? and modbusAddr=? and DeviceSerialNumber=?";
+    PreparedStatement findByIdStatement = null;
+    
+    
+    static int inserts = 0;
+    
     static final Logger logger = Logger.getLogger("Device");
 
     static HashMap<String, Device> devices = new HashMap<String, Device>();
@@ -22,6 +37,8 @@ public class Device {
     int deviceID;
     String facilityInfo;
     String name;
+    int networkId;
+    String sensorFacilityInfo;
     int modbusAddr;
     int serialNumber;
     String type;
@@ -29,16 +46,57 @@ public class Device {
     boolean reporting;
     int locationId;
     int numSensors;
-    //int countryId;
-    //int clientId;
+    ////int countryId;
+    int clientId;
     //int siteId;
-    int networkId;
     //int locationId;
 
     static {
+         logger.setLevel(Level.WARNING);
         logger.addHandler(TegnonLoad.logHandler);
     }
 
+    public Device (ResultSet rs) throws SQLException {
+        int i = 1;
+        deviceID = rs.getInt(i++);
+        facilityInfo = rs.getString(i++);
+        name = rs.getString(i++);
+         networkId = rs.getInt(i++);
+        sensorFacilityInfo = rs.getString(i++);
+        modbusAddr = rs.getInt(i++);
+        serialNumber = rs.getInt(i++);
+        type = rs.getString(i++);
+        version = rs.getString(i++);
+        reporting = rs.getBoolean(i++);
+        locationId = rs.getInt(i++);
+        numSensors = rs.getInt(i++);
+    
+       
+        devices.put(this.key(), this);
+        devicesById.put(deviceID,this);
+        
+    }
+    
+    public Device(PiLine pi) throws SQLException {
+        facilityInfo = pi.facilityInfo;
+        name = pi.deviceCommonName;
+        //networkId = pi.
+        // sensorFacilityInfo
+        modbusAddr = pi.modbusAddr;
+        serialNumber = pi.deviceSerialNumber;
+        //type = pi.
+        //version = pi.
+        reporting = true;
+        //locationId = pi.
+        numSensors = pi.numberOfAttachedSensors;
+        
+        insert();
+        
+         devices.put(this.key(), this);
+        devicesById.put(deviceID,this);
+        
+    }
+    
     public Device(String params) {
 
         String[] strs = params.split("[\t ]+");
@@ -68,6 +126,10 @@ public class Device {
             numSensors = 0;
         }
     }
+    
+    static public void zeroStat() {
+        inserts=0;
+    }
 
     String key() {
         return facilityInfo + "|" + modbusAddr + "|" + serialNumber;
@@ -78,7 +140,7 @@ public class Device {
         return devices.get(facilityInfo + "|" + modbusAddr + "|" + serialNumber);
     }
 
-    static public Device findId(Integer id) {
+    static public Device findById(Integer id) {
 
         return devicesById.get(id);
     }
@@ -90,6 +152,39 @@ public class Device {
         }
     }
 
+    static void loadSQL(Connection conn) throws SQLException{
+        Statement stmt  = conn.createStatement();
+        ResultSet rs = stmt.executeQuery("select * from DEvice");
+        while(rs.next()) {
+            new Device (rs);
+        }
+        
+    }
+    
+    void insert() throws SQLException {
+        int i = 1;
+        if (findByIdStatement==null) {
+            findByIdStatement = TegnonLoad.conn.prepareStatement(findByIdSQL);
+            insertStatement =  TegnonLoad.conn.prepareStatement(insertSQL);
+        }
+        //facilityInfo,DeviceCommonName,modbusAddr,DeviceSerialNumber,reporting,NumberOfAttachedSensors
+        insertStatement.setString(i++,facilityInfo);
+        insertStatement.setString(i++,name);
+        insertStatement.setInt(i++,modbusAddr);
+        insertStatement.setInt(i++,serialNumber);
+        insertStatement.setBoolean(i++,reporting);
+        insertStatement.setInt(i++,numSensors);
+        insertStatement.executeUpdate();
+
+        findByIdStatement.setString(1,facilityInfo);
+        findByIdStatement.setInt(2,modbusAddr);
+        findByIdStatement.setInt(3,serialNumber);
+        ResultSet rs = findByIdStatement.executeQuery();
+        rs.next();
+        this.deviceID = rs.getInt(1);
+        logger.fine("Device.Insert " + deviceID + " " + facilityInfo + "\t" + name + "\t" + type);
+        inserts++;
+    }
 //DeviceID	FacilityInfo	DeviceCommonName	NetworkID	SensorFacilityInfo	ModbusAddr	DeviceSerialNumber	DeviceType	FirmwareVersion	Reporting	LocationID	NumberOfAttachedSensors
     static final String[] deviceData = {
         "157	za.Consol.Wadeville.CartonFloor	W3_1_Pilot_Air_HP	NULL	NULL	5	31	NULL	NULL	NULL	9	NULL",

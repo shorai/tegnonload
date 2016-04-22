@@ -7,6 +7,7 @@ package tegnonload;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static tegnonload.PiLine.logger;
 
 /**
  *
@@ -15,6 +16,11 @@ import java.util.logging.Logger;
 public class ArduinoSensor {
 
     static final Logger logger = Logger.getLogger("ArduinoSensor");
+    
+    static int numBadValues = 0;
+    static int numSensorReadings = 0;
+    static int numShortLines = 0;
+    static int numFailedReads = 0;
 
     int sensorType;     //Refers to TID in SensorType Table
     int sensorStatus;   //Refers to TID in Sensor Status Table
@@ -23,6 +29,7 @@ public class ArduinoSensor {
     int measurmentType; //Refers to TID in MeasureType Table
 
     static {
+         logger.setLevel(Level.WARNING);
         logger.addHandler(TegnonLoad.logHandler);
     }
 
@@ -33,6 +40,9 @@ public class ArduinoSensor {
              //   sensorType = 19;
             //}
             sensorStatus = Integer.decode(strs[index++]);
+            if (sensorStatus == 65535) {
+                numFailedReads++;
+            }
             try {
                 sensorValue = Double.parseDouble(strs[index++]);
             } catch (Exception exc) {
@@ -42,14 +52,23 @@ public class ArduinoSensor {
                 } else {
                     sensorValue = -999.0;
                 }
+                numBadValues++;
             }
             sensorUnits = Integer.decode(strs[index++]);
-            measurmentType = Integer.decode(strs[index++]);
+            measurmentType =Integer.decode(strs[index++]);
+            numSensorReadings++;
         } else {
+            numShortLines++;
             throw new Exception("ArduinoSensor() Not enough parameters Line " +lineNumber + ":" + index);
+            
         }
     }
-
+static void zeroStat() {
+    numBadValues = 0;
+    numSensorReadings = 0;
+    numShortLines = 0;
+    numFailedReads = 0;
+}
     String head() {
         return "SType: \tStatus \t   Value \tUnits \tMeasure";
     }
