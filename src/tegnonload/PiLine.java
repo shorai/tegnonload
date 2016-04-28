@@ -5,6 +5,8 @@
  */
 package tegnonload;
 
+import java.text.DateFormat;
+import java.util.Calendar;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import static tegnonload.Sensor.logger;
@@ -16,11 +18,12 @@ import static tegnonload.Sensor.logger;
 public class PiLine {
 
     static final Logger logger = Logger.getLogger("PiLine");
-
+  static final DateFormat df = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     static int numLines = 0;
+    
     static int numFails = 0;
     static String facility = null;
-    static String firstTime= null;
+    static Calendar firstTime= null;
     
     String timeStamp;          // The date and time of the recorded date
     String facilityInfo;       // Sensor Location
@@ -49,15 +52,26 @@ public class PiLine {
         facilityInfo = strs[i++]; // array index out of bounds   1??
         deviceCommonName = strs[i++];
         modbusAddr = Integer.decode(strs[i++]);
-        deviceSerialNumber = Integer.parseInt(strs[i++]);
-        deviceTimeAlive = Integer.decode(strs[i++]);
+        try {
+            deviceSerialNumber = Integer.parseInt(strs[i++]);
+        } catch (Exception exd) {
+            logger.warning("Device Serial nUmber not numeric:" + strs[i-1] + exd.getMessage());
+            deviceSerialNumber = -1;
+        }
+        try {
+            deviceTimeAlive = Integer.decode(strs[i++]);
+        } catch (Exception exc) { 
+            logger.warning("DeviceTimeAlive not numeric :"+ strs[i-1] + " " + exc.getMessage());
+            deviceTimeAlive = -100;
+          }
         deviceStatus = Integer.decode(strs[i++]);
         dataReadMode = Integer.decode(strs[i++]);
         deviceVoltage = Integer.decode(strs[i++]);
         numberOfAttachedSensors = Integer.decode(strs[i++]);
         
         facility = facilityInfo;
-        firstTime = timeStamp;
+        firstTime = Calendar.getInstance();
+        firstTime.setTime(df.parse(timeStamp));
         
         int j = 0;
 
@@ -94,7 +108,14 @@ public class PiLine {
     }
 static public void zeroStat() {
         facility = "Unknown";
-        firstTime= "2000/01/01 00:00:00";
+        try {
+            firstTime = Calendar.getInstance();
+        firstTime.setTime(df.parse("2000/01/01 00:00:00"));
+        } catch (Exception exc) {
+            firstTime = Calendar.getInstance();
+            firstTime.setTime(new java.util.Date());
+            firstTime.set(Calendar.YEAR,2000);
+        }
         numLines = 0;
         numFails = 0;
     }

@@ -42,7 +42,7 @@ public class Sensor {
     int netId;
     int columnNumber;
 
-    Statistic stat = new Statistic(this);
+    Statistic stat = new Statistic(this,Calendar.getInstance());
 
     //SensorID	DeviceID	SensorTypeTID	SensorUnitTID	MeasurementTypeTID	LineID	NetworkID	SensorNumber",
     static {
@@ -160,6 +160,8 @@ public class Sensor {
             } else {
                 s.stat.writeFlowSQL(messageId);
             }
+            
+            SensorDataHour.instance.addHalfHour(s.stat);
         }
         //System.out.println(" SensorDataHour updated for " + count + " records");
 
@@ -172,9 +174,10 @@ public class Sensor {
             new Sensor(rs);
         }
     }
-
+//java.sql.SQLException: The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Sensors_SensorType". The conflict occurred in database "TegnonEfficiency", table "dbo.SensorType", column 'SensorTypeID'.
+	
     void insert() throws SQLException {
-        if (insertSQL == null) {
+        if (insertStatement == null) {
             insertStatement = TegnonLoad.conn.prepareStatement(insertSQL);
             findByIdStatement = TegnonLoad.conn.prepareStatement(findByIdSQL);
         }

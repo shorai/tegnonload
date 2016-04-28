@@ -16,6 +16,8 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.text.DateFormat;
+import java.text.ParseException;
+import java.util.Calendar;
 import java.util.Vector;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -28,11 +30,16 @@ import static tegnonload.PiLine.logger;
 /**
  *
  * @author Chris
+ *
+ * @TODO: Attachment IDs a re a problem since Hendrik no longer creates the
+ * email and attachment records
+ * @TODO: AttchmentIDs - there is insufficient data to create them. Lost in the
+ * email download
  */
 public class TegnonLoad {
 
     // These two vars allow us to test without detroying data
-    static final boolean DEBUG = true;
+    static final boolean DEBUG = false;
     static final boolean UPDATE_DATA = true;
 
     static final int LOG_SIZE = 1000000;
@@ -45,9 +52,11 @@ public class TegnonLoad {
 
     static final String dirName = "C:\\Tegnon\\tegnonefficiencydatagmail.com\\za.tegnon.consol@gmail.com";
     static final String outName = "C:\\Tegnon\\tegnonefficiencydatagmail.com\\processed";
+    // static final String outName = "C:\\Tegnon\\processed";
 
     static final DateFormat df = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-/*
+    static final DateFormat dfx = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    /*
 static final String createTableSQL = "create table LoadStats (
 	id int not null IDENTITY(1,1) PRIMARY KEY, 
 	newFilePath varchar(255),	
@@ -60,32 +69,45 @@ static final String createTableSQL = "create table LoadStats (
         insufficientParameters int,
         DeviceInserts int,
         SensorInserts int,
+    
         StatEnergy int,
         StatFlow int,
         StatInserted int,
         StatUpdated int,
+    
         PiLines int,
         PiFails int,
+    
         ArdBadValues int,
         ArdReadings int,
         ArdShortLines int,
 	ArdFailed int;
+    
+        DataNormalInserts int;
+      
+        DataHourInserts int;
+        DataHourUpdates int;
+    
+        milliseconds int;
 )");     
-*/
-static final String insertStatSQL = "insert into LoadStats (newFilePath,fileName,fileSize,"+
-        "facility,DateCreated,DateProcessed,"+
-	"readLines,insufficientParameters,"+
-        "DeviceInserts,SensorInserts,"+
-        "StatEnergy,StatFlow,StatInserted,StatUpdated,"+
-        "PiLines,PiFails,"+
-        "ArdBadValues,ArdReadings,"+
-        "ArdShortLines,ArdFailed";
-static PreparedStatement loadStatStatement = null;
+     */
+    static final String insertStatSQL = "insert into LoadStats (newFilePath,fileName,fileSize,"
+            + "facility,DateCreated,DateProcessed,"
+            + "readLines,insufficientParameters,"
+            + "DeviceInserts,SensorInserts,"
+            + "StatEnergy,StatFlow,StatInserted,StatUpdated,"
+            + "PiLines,PiFails,"
+            + "ArdBadValues,ArdReadings,"
+            + "ArdShortLines,ArdFailed,milliseconds,"
+            + "dataNormalInserts,dataNormalUpdates,dataNormalErrors,"
+            + "dataHourEnergy,dataHourFlow,dataHourInserts, dataHourUpdates,dataHourError"
+            + ")values(?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?, ?,?,?,?)";
+    static PreparedStatement loadStatStatement = null;
     //static String dirName = "D:/Tegnon/logs/WSSVC2";
     static String messageId;
-    
-static int insufficientParameters = 0;
-        static int readLines = 0;
+
+    static int insufficientParameters = 0;
+    static int readLines = 0;
     Vector<PiLine> piLines = new Vector<PiLine>();
 
     public static Connection conn;
@@ -122,8 +144,8 @@ static int insufficientParameters = 0;
         // Create a variable for the connection string.
         String username = "javaUser1";
         String password = "sHxXWij02AE4ciJre7yX";
-        String connectionUrl = "jdbc:sqlserver://localhost:1433;"
-                + "databaseName=TegnonEfficiency";
+        // String connectionUrl = "jdbc:sqlserver://localhost:1433;databaseName=TegnonEfficiency";
+        String connectionUrl = "jdbc:jtds:sqlserver://localhost/TegnonEfficiency";
 
         // Declare the JDBC objects.
         try {
@@ -139,7 +161,7 @@ static int insufficientParameters = 0;
         }
 
     }
-    
+
     void zeroStats() {
         insufficientParameters = 0;
         readLines = 0;
@@ -148,64 +170,87 @@ static int insufficientParameters = 0;
         Statistic.zeroStat();
         PiLine.zeroStat();
         ArduinoSensor.zeroStat();
+        SensorDataHour.zeroStat();
+        SensorDataNormal.zeroStat();
     }
-    
+
     void insertStat(String newFilePath, String fileName, long fileSize,
-            String facility, java.sql.Time dateCreated ) {
-        int i = 0;
-        try { 
-        loadStatStatement.setString(i++,newFilePath);
-	loadStatStatement.setString(i++,fileName);
-	loadStatStatement.setLong(i++,fileSize);
-        loadStatStatement.setString(i++,facility);
-	loadStatStatement.setTime(i++,dateCreated);
-	loadStatStatement.setTime(i++,new java.sql.Time(new java.util.Date().getTime()));
-	loadStatStatement.setInt(i++,readLines);
-	loadStatStatement.setInt(i++,insufficientParameters);
-        loadStatStatement.setInt(i++,Device.inserts);
-	loadStatStatement.setInt(i++,Sensor.inserts);
-        loadStatStatement.setInt(i++,Statistic.numEnergy);
-	loadStatStatement.setInt(i++,Statistic.numFlow);
-	loadStatStatement.setInt(i++,Statistic.numInserted);
-	loadStatStatement.setInt(i++,Statistic.numUpdated);
-        loadStatStatement.setInt(i++,PiLine.numLines);
-	loadStatStatement.setInt(i++,PiLine.numFails);   
-        loadStatStatement.setInt(i++,ArduinoSensor.numBadValues);
-	loadStatStatement.setInt(i++,ArduinoSensor.numSensorReadings);
-        loadStatStatement.setInt(i++,ArduinoSensor.numShortLines);
-	loadStatStatement.setInt(i++,ArduinoSensor.numFailedReads);
-        
-        loadStatStatement.executeUpdate();
-        } catch (SQLException sexc) { 
-            logger.log(Level.SEVERE,"Failed to log Statistice "+ sexc.getMessage(),sexc);
+            String facility, Calendar dateCreated, long milliseconds) {
+        int i = 1;
+        String fname = fileName.substring(fileName.lastIndexOf('\\') + 1);
+        try {
+            if (loadStatStatement == null) {
+                loadStatStatement = conn.prepareStatement(insertStatSQL);
+            }
+
+            loadStatStatement.setString(i++, newFilePath);
+            loadStatStatement.setString(i++, fileName);
+            loadStatStatement.setLong(i++, fileSize);
+            loadStatStatement.setString(i++, facility);
+            loadStatStatement.setTimestamp(i++, new java.sql.Timestamp(dateCreated.getTimeInMillis()));
+
+            loadStatStatement.setTimestamp(i++, new java.sql.Timestamp(new java.util.Date().getTime()));
+            loadStatStatement.setInt(i++, readLines);
+            loadStatStatement.setInt(i++, insufficientParameters);
+            loadStatStatement.setInt(i++, Device.inserts);
+            loadStatStatement.setInt(i++, Sensor.inserts);
+
+            loadStatStatement.setInt(i++, Statistic.numEnergy);
+            loadStatStatement.setInt(i++, Statistic.numFlow);
+            loadStatStatement.setInt(i++, Statistic.numInserted);
+            loadStatStatement.setInt(i++, Statistic.numUpdated);
+            loadStatStatement.setInt(i++, PiLine.numLines);
+
+            loadStatStatement.setInt(i++, PiLine.numFails);
+            loadStatStatement.setInt(i++, ArduinoSensor.numBadValues);
+            loadStatStatement.setInt(i++, ArduinoSensor.numSensorReadings);
+            loadStatStatement.setInt(i++, ArduinoSensor.numShortLines);
+            loadStatStatement.setInt(i++, ArduinoSensor.numFailedReads);
+
+            loadStatStatement.setLong(i++, milliseconds);
+            loadStatStatement.setLong(i++, SensorDataNormal.numInserts);
+            loadStatStatement.setLong(i++, SensorDataNormal.numUpdates);
+            loadStatStatement.setLong(i++, SensorDataNormal.numErrors);
+
+            //dataHourEnergy,dataHourFlow,dataHourInserted,dataHourUpdated,dataHourError
+            loadStatStatement.setInt(i++, SensorDataHour.numEnergy);
+            loadStatStatement.setInt(i++, SensorDataHour.numFlow);
+            loadStatStatement.setInt(i++, SensorDataHour.numInserted);
+            loadStatStatement.setInt(i++, SensorDataHour.numUpdated);
+            loadStatStatement.setInt(i++, SensorDataHour.numErrors);
+
+            loadStatStatement.executeUpdate();
+        } catch (SQLException sexc) {
+            logger.log(Level.SEVERE, "Failed to log Statistice " + sexc.getMessage(), sexc);
         }
     }
-       
-      
 
     void runFile(String fileName) {
-        File f= null;
-        String newPath= "";
+        long milliseconds = new java.util.Date().getTime();
+        long filesize = 0;
+        File f = null;
+        String newPath = "";
         try {
             zeroStats();
             f = new File(fileName);
+            filesize = f.length();
             messageId = fileName;
             FileReader fr = new FileReader(f);
             BufferedReader br = new BufferedReader(fr);
             String str = br.readLine();
             logger.info("Opening File " + fileName);
-                String facilityInfo;
-            
+            String facilityInfo;
+
             while (str != null) {
-                
-        readLines++;
+
+                readLines++;
                 //if(br.ready()) {
                 //System.out.println("Read line :" + str);
                 if (str.trim().length() > 0) {
                     String[] strs = str.split("[|]");
-                    if(strs.length > 1) {
-                               facilityInfo = strs[1];
-                 
+                    if (strs.length > 1) {
+                        facilityInfo = strs[1];
+
                     } else {
                         facilityInfo = "Unknown facility";
                     }
@@ -213,12 +258,13 @@ static int insufficientParameters = 0;
                         try {
                             PiLine pil = new PiLine(strs);
                             piLines.add(pil);
+
                         } catch (Exception exc) {
 
                             logger.log(Level.SEVERE, "new PiLine " + str, exc);
                         }
                     } else {
-                       insufficientParameters++;
+                        insufficientParameters++;
                     }
                 }
 
@@ -229,18 +275,24 @@ static int insufficientParameters = 0;
             //conn.executeQuery("Begin trans " + filename);
             Sensor.writeSQL(-1); //messageId);
             //conn.executeQuery("commit trans " + filename);
-            conn.commit();
+            //  conn.commit();
             System.out.println(Statistic.getSqlStat());
             logger.info(Statistic.getSqlStat());
+            Calendar created = PiLine.firstTime;
+        
+            newPath = PiLine.facility.replace(".", "/");
+            
+            insertStat(newPath, f.getName(), filesize, PiLine.facility, created, new java.util.Date().getTime() - milliseconds);
 
             Sensor.zeroTots();
             // can throw exception
             if (UPDATE_DATA) {
-                newPath = PiLine.facility.replaceAll(".","/");
-                String newName = outName + File.separatorChar + newPath+ File.separatorChar + f.getName();
+                String newName = outName + File.separatorChar + newPath + File.separatorChar + f.getName();
                 try {
+                    File np = new File(newName);
                     // CopyOptions not all implemented or working, ATOMIC excludes others
-                    java.nio.file.Files.move(f.toPath(), new File(newName).toPath(),
+                    np.mkdirs();
+                    java.nio.file.Files.move(f.toPath(), np.toPath(),
                             StandardCopyOption.REPLACE_EXISTING); //, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.COPY_ATTRIBUTES);
 
                     System.out.println("File moved successfully to " + newName);
@@ -257,8 +309,6 @@ static int insufficientParameters = 0;
         }
         System.out.println("Pilines scanned = " + piLines.size());
         //logOnSQL(fileName, facilityInfo);
-        java.util.Date created = new java.util.Date(PiLine.firstTime);
-        insertStat(newPath, fileName,((f==null)?0: f.length()), PiLine.facility, new java.sql.Time(created.getTime()));
     }
 
     public void runDirectory(String dir) {
@@ -306,23 +356,27 @@ static int insufficientParameters = 0;
             connectSQL();
             Statistic.prepare(conn);
 
+            Hierarchy.load(conn);
             Device.loadSQL(conn);
-             if (DEBUG) {
+            if (DEBUG) {
                 Device.dump();
-            
+
             }
+            SensorDataNormal.init(conn);
             Sensor.loadSQL(conn);
             if (DEBUG) {
                 Sensor.dump();
             }
             //conn = null;
             TegnonLoad x = new TegnonLoad();
+            x.runDirectory(dirName);
+
         } catch (SQLException sexc) {
             logger.log(Level.SEVERE, "SQL Exception " + sexc.getMessage(), sexc);
         } catch (Exception exc) {
             logger.log(Level.SEVERE, "SQL Exception " + exc.getMessage(), exc);
         }
-        //x.runDirectory(dirName);
+
     }
 
     private class MyFormatter extends java.util.logging.Formatter {

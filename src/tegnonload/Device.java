@@ -20,10 +20,10 @@ import java.util.logging.Logger;
  */
 public class Device {
     
-    static String insertSQL = "insert into Device(facilityInfo,DeviceCommonName,modbusAddr,DeviceSerialNumber,reporting,NumberOfAttachedSensors) values(?,?,?,?,?,?)";
+    static String insertSQL = "insert into Device(facilityInfo,DeviceCommonName,modbusAddr,DeviceSerialNumber,reporting,locationID,NumberOfAttachedSensors) values(?,?,?,?,?,?,?)";
     PreparedStatement insertStatement = null;
     
-    static String findByIdSQL = "select DEviceId from DEvice where facilityInfo=? and modbusAddr=? and DeviceSerialNumber=?";
+    static String findByIdSQL = "select DeviceId from DEvice where facilityInfo=? and modbusAddr=? and DeviceSerialNumber=?";
     PreparedStatement findByIdStatement = null;
     
     
@@ -87,7 +87,8 @@ public class Device {
         //type = pi.
         //version = pi.
         reporting = true;
-        //locationId = pi.
+        Hierarchy h = Hierarchy.find(this.facilityInfo);
+        locationId = h.locationID;
         numSensors = pi.numberOfAttachedSensors;
         
         insert();
@@ -173,6 +174,7 @@ public class Device {
         insertStatement.setInt(i++,modbusAddr);
         insertStatement.setInt(i++,serialNumber);
         insertStatement.setBoolean(i++,reporting);
+        insertStatement.setInt(i++,locationId);
         insertStatement.setInt(i++,numSensors);
         insertStatement.executeUpdate();
 

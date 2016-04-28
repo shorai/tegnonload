@@ -58,8 +58,10 @@ static PreparedStatement loadStatement = null;
         logger.addHandler(TegnonLoad.logHandler);
     }
 
-    public Statistic(Sensor s) {
+    public Statistic(Sensor s, Calendar startTime) {
         sensor = s;
+        //sensorType = s.typeTID;
+        this.startTime = startTime;
         zero();
 
     }
@@ -68,6 +70,8 @@ static PreparedStatement loadStatement = null;
         zero();
        java.util.Date dt = startTime.getTime();
         java.sql.Timestamp ts = new java.sql.Timestamp(dt.getTime());
+        if (loadStatement == null)
+            loadStatement = TegnonLoad.conn.prepareStatement(loadSql);
         loadStatement.setInt(1,sensorId);
         loadStatement.setTimestamp(1,ts);
         loadStatement.setInt(1,sensorType);
@@ -152,6 +156,7 @@ static PreparedStatement loadStatement = null;
             }
         }
         count++;
+        //SensorDataNormal.instance.save(this,startTime);
     }
 
     static String getSqlStat() {
@@ -167,9 +172,11 @@ static PreparedStatement loadStatement = null;
             if (startTime.get(Calendar.MINUTE) < 30) {
                 startTime.set(Calendar.MINUTE, 0);
             } else {
-                startTime.set(Calendar.MINUTE, 0);
+                startTime.set(Calendar.MINUTE, 30);
             }
             
+            if (endTime == null)
+                endTime = startTime;
             
             endTime.set(Calendar.SECOND, 59);
             endTime.set(Calendar.MILLISECOND, 999);
@@ -184,46 +191,106 @@ static PreparedStatement loadStatement = null;
     String dump() {
         String timeStr = startTime.toString();
         try {
-            timeStr = df.format(startTime);
+            timeStr = df.format(startTime.getTime());
         } catch (Exception ext) {
             logger.severe(timeStr + " df.format " + ext.getMessage());
         }
-        return sensor.key() + "\t" + df.format(startTime) + "\t" + df.format(endTime)
+        return sensor.key() + "\t" + df.format(startTime.getTime()) + "\t" + df.format(endTime.getTime())
                 + "\t First:" + first + "\tLast:" + last + "\tSum:" + sum
                 + "\tMax:" + max + "\tMin:" + min + "\tCount:" + count;
     }
+  static final String retrySql = "update SensorDataHalfHour set attachmentID=%d,  recordCount=%d,"+
+                " sensorValue=%f,maximum=%f, minimum=%f, sumOfSquares=%f, RMS=%f, standardDeviation=%f " 
+                +"where sensorId=%d and startTime='%s' and sensorType=%d";
+      
+    
+    void retryUpdate(Integer messageId, Sensor sensor,  Integer sensorType, Double rms, Double sd) throws SQLException {
+         
+        String sts= df.format(startTime.getTime());
+         
+        String s = String.format(retrySql,messageId,count,sum,max,min,sumSquares,rms,sd,sensor.id,sts, sensorType);
+                    
+        TegnonLoad.conn.createStatement().execute(s);
 
-    void toDb(Integer messageId, Integer sensorId, Calendar cal, Integer sensorType, Integer recordCount,
-            Double sensorValue, Double sumOfSquares, Double max, Double min) {
+        logger.info("Retry Update completed:" + s);
+    }
+    
+    void toDb(Integer messageId, Sensor sensor,  Integer sensorType) { //, Integer recordCount,
+            //Double sensorValue, Double sumOfSquares, Double max, Double min) {
 
       
-        java.sql.Timestamp ts = new java.sql.Timestamp(cal.getTimeInMillis());
-        
+        java.sql.Timestamp ts = new java.sql.Timestamp(startTime.getTimeInMillis());
+        /*
+        java.sql.SQLException: Violation of PRIMARY KEY constraint 'PK_SensorDataHalfHour'. 
+        Cannot insert duplicate key in object 'dbo.SensorDataHalfHour'. 
+        The duplicate key value is (785, Apr 25 2016  5:00PM, 19).
+
+        */
+        int recordsOnFile= -1;
         try {
             // look for record on DB
-            findStatement.setInt(1, sensorId);
-            findStatement.setTimestamp(2, ts);
+            findStatement.setInt(1, sensor.id);
+            findStatement.setTimestamp(2, ts); //new java.sql.Time(startTime.getTime().getTime()));
             findStatement.setInt(3, sensorType);
 
             ResultSet rs = findStatement.executeQuery();
             rs.next();
-            int count = rs.getInt(1);
-            int i = 1;
-            if (count == 0) {
+            recordsOnFile = rs.getInt(1);
+            rs.close();
+
+            logger.info("Lookup SensorDataHour SensorId:" + sensor.id
+                + " Time:" + ts + " typeTID:"+ sensorType + " COunt:" + recordsOnFile);
+            
+            Double rms = 0.00; 
+            Double sd = 0.00;
+            
+            if (recordsOnFile > 0) {
+                rms = Math.sqrt(sumSquares /count);
+                sd = Math.sqrt(Math.abs((sumSquares - sum * sum)) / count);
+            }
+            
+            sum = Math.round(sum*10000.00)/10000.00;
+            sumSquares = Math.round(sumSquares*10000.00)/10000.00;
+            
+            rms = Math.round(rms*10000.00)/10000.00;
+            sd = Math.round(sd*10000.00)/10000.00;
+            
+            if ((rms==null) || (rms.isNaN()) || (rms.isInfinite())) {
+                logger.warning("Computed RMS value was not acceptable:"+ rms );
+;                rms = 0.00;
+            }
+            if ((sd==null) || (sd.isNaN()) || (sd.isInfinite())) {
+                logger.warning("Computed StandardDeviation was unacceptable:"+sd);
+                sd = 0.00;
+            }
+            
+            
+                int i = 1;
+            if (recordsOnFile == 0) {
                 if (TegnonLoad.UPDATE_DATA) {
                     insertStatement.setInt(i++, messageId);
-                    insertStatement.setInt(i++, sensorId);
+                    insertStatement.setInt(i++, sensor.id);
                     insertStatement.setTimestamp(i++, ts);
                     insertStatement.setInt(i++, sensorType);
-                    insertStatement.setInt(i++, recordCount);
-                    insertStatement.setDouble(i++, sensorValue);
-                    insertStatement.setDouble(i++, sumOfSquares);
+                    insertStatement.setInt(i++, count);
+                    insertStatement.setDouble(i++, sum);
+                    insertStatement.setDouble(i++, sumSquares);
                     insertStatement.setDouble(i++, max);
                     insertStatement.setDouble(i++, min);
-                    insertStatement.setDouble(i++, sumOfSquares / recordCount);
-                    insertStatement.setDouble(i++, (sumOfSquares - sensorValue * sensorValue) / recordCount);
+                    insertStatement.setDouble(i++, rms);
+                    insertStatement.setDouble(i++,sd);
+/*
+SEVERE: Statistic.toDB():SQL error 
+                    SensorID:785 Time:2016-04-25 20:00:00.0 Type:20 Count:0 
+                    Violation of PRIMARY KEY constraint 'PK_SensorDataHalfHour'. 
+                    Cannot insert duplicate key in object 'dbo.SensorDataHalfHour'. 
+                    The duplicate key value is (785, Apr 25 2016  8:00PM, 19).
+java.sql.SQLException: Violation of PRIMARY KEY constraint 'PK_SensorDataHalfHour'. 
+                    Cannot insert duplicate key in object 'dbo.SensorDataHalfHour'. 
+                    The duplicate key value is (785, Apr 25 2016  8:00PM, 19).
 
-                    insertStatement.executeUpdate();
+                    */
+                    insertStatement.execute();
                     logger.log(Level.FINE, "InsertRecord " + dump());
                 } else {
                     logger.log(Level.INFO, "Dummy InsertRecord " + dump());
@@ -233,22 +300,39 @@ static PreparedStatement loadStatement = null;
 
             } else {
                 if (TegnonLoad.UPDATE_DATA) {
+                    i=1;
                     updateStatement.setInt(i++, messageId);
-                    updateStatement.setInt(i++, recordCount);
-                    updateStatement.setDouble(i++, sensorValue);
+                    updateStatement.setInt(i++, count);
+                    
+                    updateStatement.setDouble(i++, sum);
                     updateStatement.setDouble(i++, max);
                     updateStatement.setDouble(i++, min);
-                    updateStatement.setDouble(i++, sumOfSquares);
-                    insertStatement.setDouble(i++, sumOfSquares / recordCount);
-                    insertStatement.setDouble(i++, (sumOfSquares - sensorValue * sensorValue) / recordCount);
+                    updateStatement.setDouble(i++, sumSquares);
+                    insertStatement.setDouble(i++, rms);
+                    insertStatement.setDouble(i++, sd);
 
-                    updateStatement.setInt(i++, sensorId);
+                    updateStatement.setInt(i++, sensor.id);
                     updateStatement.setTimestamp(i++, ts);
+                   // updateStatement.setDate(i++, startTime.getTime());
                     updateStatement.setInt(i++, sensorType);
 
-                    int cnt = updateStatement.executeUpdate();
-
-                    if (cnt == 1) {
+                    //int cnt = updateStatement.executeUpdate();
+                    logger.info(" Updating "+ messageId + "," + count + "," 
+                            + sum + "," + max + "," + min + ","
+                            + sumSquares + "," + rms + "," + sd + "," 
+                            + sensor.id + "," + ts + "," + sensorType);
+                   
+                    
+                    boolean cnt = false;
+                    try {
+                        updateStatement.execute();
+                    } catch(SQLException xx) {
+                        logger.warning(" Failed update - retrying"+xx.getMessage());
+                        retryUpdate(messageId,sensor, sensorType, rms,sd);
+                    }
+                                       
+//if (cnt == 1) {
+                    if (cnt) {
                         logger.log(Level.FINE, " One Energy Record updated:" + dump());
                     } else {
                         logger.log(Level.INFO, "Energy Record not updated[" + cnt + "]" + dump());
@@ -260,7 +344,10 @@ static PreparedStatement loadStatement = null;
                 numUpdated++;
             }
         } catch (Exception exc) {
-            logger.log(Level.SEVERE, "Statistic.toDB():SQL error " + exc.getMessage(), exc);
+            logger.log(Level.SEVERE, "Statistic.toDB():SQL error " 
+                    + " SensorID:" + sensor.id + " Time:" + ts //df.format(startTime.getTime()) 
+                    + " Type:" + sensorType + " Count:" + count + " "
+                    + exc.getMessage(), exc);
             numErrors++;
         }
 
@@ -268,7 +355,7 @@ static PreparedStatement loadStatement = null;
 
     void writeFlowSQL(Integer messageId) {
         if (sum > 0.00) {
-            toDb(messageId, sensor.id, startTime, sensor.typeTID, count, sum, max, min, sumSquares);
+            toDb(messageId, sensor, sensor.typeTID); //, count, sum, max, min, sumSquares);
             logger.log(Level.INFO, "Stat.writeFlow  " + dump());
             numFlow++;
         }
@@ -281,9 +368,13 @@ static PreparedStatement loadStatement = null;
             val += 32767.0;
         }
         if (val > 0.00) {
+            //sensorType = 19;
+            max = last;
+            min = first;
+            count = 60;
             this.sum = val;
             this.sumSquares = val * val;
-            toDb(messageId, sensor.id, startTime, 19, 60, val, val * val, last, first);
+            toDb(messageId, sensor, 19);
             logger.log(Level.INFO, "Stat.written Energy  " + dump() + " Energy Calc:" + val);
             numEnergy++;
         }
