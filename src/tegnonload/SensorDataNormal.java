@@ -32,14 +32,14 @@ static final Logger logger = Logger.getLogger("SensorDataNormal");
     static PreparedStatement findStatement = null;
 
     static final String insertSql = "insert into SensorDataNormal(AttachmentID, "
-            + "SensorId, DeviceID,DateTimeStamp,SensorType"
+            + "SensorId, DeviceID,DateTimeStamp,SensorType,"
             + "SensorValue, SensorCalculatedType,SensorCalculatedValue)"
             + "values(?,?,?,?,?,?,?,?)";
     static PreparedStatement insertStatement = null;
 
     static final String updateSql = "update SensorDataNormal set"
-            + " SensorValue=?, SemsorCalculatedType=?, SensorCalculatedValue=?"
-            + " wher id = ?";
+            + " SensorValue=?, SensorCalculatedType=?, SensorCalculatedValue=?"
+            + " where id = ?";
     static PreparedStatement updateStatement = null;
 
     static final DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -49,13 +49,13 @@ static final Logger logger = Logger.getLogger("SensorDataNormal");
     static int numErrors = 0;
     
     Integer id;
-    int attachmentId = -1;
+    int attachmentId = 1;  // cant use -1 because it is in a foreign key relationship
     Sensor sensor;
     //Device device;
     Integer sensorType;
     Double value;
-    Integer calcType;
-    Double calcValue;
+    Integer calcType = new Integer(0);
+    Double calcValue = new Double(0.00);
 
     static public SensorDataNormal instance = new SensorDataNormal();
 
@@ -119,7 +119,8 @@ static final Logger logger = Logger.getLogger("SensorDataNormal");
         try {
         //java.sql.Timestamp time = new java.sql.Timestamp(stat.startTime.getTimeInMillis()); //new java.sql.Timestamp(df.parse(pi.timeStamp).getTime());
         Sensor s = stat.sensor;
-        
+        if (findStatement ==null)
+            init(TegnonLoad.conn);
         findStatement.setInt(i++, s.id);
         findStatement.setTimestamp(i++, new java.sql.Timestamp(time.getTimeInMillis()));
         findStatement.setInt(i++, s.typeTID);
@@ -149,7 +150,11 @@ static final Logger logger = Logger.getLogger("SensorDataNormal");
             insertStatement.setInt(i++,s.device.deviceID);
             insertStatement.setTimestamp(i++,new java.sql.Timestamp(time.getTimeInMillis()));
             insertStatement.setInt(i++,s.typeTID);
-            insertStatement.setDouble(i++,value);
+            if (value==null){
+                insertStatement.setDouble(i++,0.00);
+            } else {
+                insertStatement.setDouble(i++,value);
+            }
             insertStatement.setInt(i++,calcType);
             insertStatement.setDouble(i++,calcValue);
             

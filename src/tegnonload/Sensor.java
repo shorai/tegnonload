@@ -75,7 +75,7 @@ public class Sensor {
         insert();
         sensors.put(key(), this);
     }
-
+/*
     public Sensor(String vals) {
         String[] strs = vals.split("[\t ]+");
 
@@ -119,7 +119,7 @@ public class Sensor {
         }
         //System.out.println("   sensor dev:"+ device.key() + "," + id);
     }
-
+*/
     String key() {
         return "" + device.key() + "," + columnNumber + "," + typeTID;
     }
@@ -155,7 +155,8 @@ public class Sensor {
             s.stat.setTimes();
             
             
-            if ((s.typeTID == 20) || (s.typeTID == 20)) {
+          //  if ((s.typeTID == 20) || (s.typeTID == 20)) {
+            if (s.typeTID == 20) {
                 s.stat.writeEnergySQL(messageId);
             } else {
                 s.stat.writeFlowSQL(messageId);
@@ -198,10 +199,10 @@ public class Sensor {
         ResultSet rs = findByIdStatement.executeQuery();
         rs.next();
         id = rs.getInt(1);
-        logger.info("Sensor.insert " + id + " " + device.key() + " Devid:" + device.deviceID + " Type:" + typeTID);
+        logger.info("Sensor.insert " + id + " " + device.key() + " Devid:" + device.deviceID + " Type:" + typeTID + " Column:"+ columnNumber);
         inserts++;
     }
-
+/*
     //SensorID	DeviceID	SensorTypeTID	SensorUnitTID	MeasurementTypeTID	LineID	NetworkID	SensorNumber",
     static final String[] sensorData = {
         "657	157	1	4	1	NULL	1	1",
@@ -645,5 +646,5 @@ public class Sensor {
         }
 
     }
-
+*/
 }

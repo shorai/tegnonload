@@ -88,9 +88,9 @@ public class PiLine {
                 if (d == null) {
                     d = new Device(this);
                 }
-                Sensor s = Sensor.find(d, j + 1, as.sensorType);
+                Sensor s = Sensor.find(d, j+1, as.sensorType);
                 if (s == null) {
-                    s = new Sensor(d, as, j);
+                    s = new Sensor(d, as, j+1);
                 }
                 /* if (as.sensorType == 20) {
                     logger.info("Energy Sensor " + d.facilityInfo + ":" + d.name + " Sensor:" + s.id + " Key:" +s.key() + " Type:" + as.sensorType + " Value:" + as.sensorValue 
