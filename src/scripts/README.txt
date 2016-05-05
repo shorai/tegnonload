@@ -10,7 +10,7 @@ In order to install on a new system, simply
 		 in Microsoft go to start->admintools->taskScheduler
 		    The only gotch is that for run.bat you create a task to run every hour, 
 			    then modify its properties to run every half hour , whatever
-				
+    -The scripts/Version2 folder contains extractors to install the gmail fetch program				
 
 COMPLETE INSTALL
 ================
@@ -283,8 +283,14 @@ This is the simplest approach, least flexible and scalable
               The credentials are stored in clear text in the Jasper filesystem
                   can it use Windows authentication on SQL Server
                   Does Mysql introduce a vulnerability?
+		Jasper report scripts are maintained in the user workspace folder as per any eclipse project
+		
+21) Version 2
 
-
+         A mail retrieval program is currently being used , the extractor/installer is in the 
+		       csripts/version2 folder. It neads to be run
+	     Create a path C:\Tegnon\tegnonefficiencydatagmail.com\za.tegnon.consol@gmail.com
+		        for it to work in
 
 
 21) Disaster Recovery
