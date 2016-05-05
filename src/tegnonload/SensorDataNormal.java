@@ -18,7 +18,7 @@ import java.util.logging.Logger;
 
 /**
  * Singleton pattern since we always deal with a single instance at a time
- *
+ * 
  * Later versions may optimise by reading an array for an attachment or device
  *
  * @author chris.rowse
@@ -114,11 +114,12 @@ static final Logger logger = Logger.getLogger("SensorDataNormal");
         }
     }
 */
-    public void save(Statistic stat,Calendar time) { // throws SQLException, ParseException {
+    public void save(Statistic stat,Calendar time, Double val) { // throws SQLException, ParseException {
         int i = 1;
         try {
         //java.sql.Timestamp time = new java.sql.Timestamp(stat.startTime.getTimeInMillis()); //new java.sql.Timestamp(df.parse(pi.timeStamp).getTime());
         Sensor s = stat.sensor;
+        value = val;        
         if (findStatement ==null)
             init(TegnonLoad.conn);
         findStatement.setInt(i++, s.id);
@@ -131,11 +132,11 @@ static final Logger logger = Logger.getLogger("SensorDataNormal");
             id = rs.getInt(i++);
             attachmentId = rs.getInt(i++);
             sensorType = s.typeTID;
-            value = rs.getDouble(i++);
+            value = rs.getDouble(i++); // Don't want old values from DB
             calcType = rs.getInt(i++);
             calcValue = rs.getDouble(i++);
             i = 1;
-            updateStatement.setDouble(i++, value);
+            updateStatement.setDouble(i++, val);
             updateStatement.setInt(i++, calcType);
             updateStatement.setDouble(i++, calcValue);
 
@@ -153,7 +154,7 @@ static final Logger logger = Logger.getLogger("SensorDataNormal");
             if (value==null){
                 insertStatement.setDouble(i++,0.00);
             } else {
-                insertStatement.setDouble(i++,value);
+                insertStatement.setDouble(i++,val);
             }
             insertStatement.setInt(i++,calcType);
             insertStatement.setDouble(i++,calcValue);

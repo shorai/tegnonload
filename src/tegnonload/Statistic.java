@@ -156,7 +156,7 @@ static PreparedStatement loadStatement = null;
             }
         }
         count++;
-        SensorDataNormal.instance.save(this,startTime);
+        SensorDataNormal.instance.save(this,date,value); //startTime);
     }
 
     static String getSqlStat() {
