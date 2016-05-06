@@ -142,8 +142,11 @@ static final String createTableSQL = "create table LoadStats (
 
     static public void connectSQL() {
         // Create a variable for the connection string.
-        String username = "javaUser1";
+     /*   String username = "javaUser1";
         String password = "sHxXWij02AE4ciJre7yX";
+        */
+     String username = "TegnonLoadUser";
+        String password = "04fGvbJCTOrtxofpq0Bf";
         // String connectionUrl = "jdbc:sqlserver://localhost:1433;databaseName=TegnonEfficiency";
         String connectionUrl = "jdbc:jtds:sqlserver://localhost/TegnonEfficiency";
 
