@@ -196,8 +196,11 @@ This is the simplest approach, least flexible and scalable
         Differentiate administative and user accounts as a security precaution
         Java ETL should be run as a scheduled task for a windows user with SQL privilege
 
-16) Backup the database daily and move to Glacier storage
-        or run RDS 
+16) Backup the database daily and move to S3/Glacier storage
+        or run RDS
+        There are various scripts in the scripts folder on the GIT master 
+                 These run every half hour (import), then daily weekly, monthly
+				S3 has expiry facility on a bucket or folder - use s3-browser to set appropriate times
 
 
 17) Microsoft server 2000

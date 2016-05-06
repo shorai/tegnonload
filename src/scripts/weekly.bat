@@ -1,14 +1,18 @@
 echo "*********************************************************************************************************************** START  " 
 date /T
 Time /T
-REM # set CLASSPATH=.;"C:\Program Files\Microsoft JDBC Driver 6.0 for SQL Server\sqljdbc_4.2\enu\sqljdbc42.jar"
-REM # set CLASSPATH=.\;C:\jars\sqljdbc42.jar
-REM java   -jar TegnonLoad.jar
 
-sqlcmd -d TegnonEfficiency -i SQLLogBackupAndTrunc.sql
+sqlcmd -d TegnonEfficiency -i SQLWeekly.sql
 
 
-REM - at this point we should zip the logs and move them to s3 storage
+REM - at this point we zip the logs and move them to s3 storage
+REM - we first clear the backup directory to stop it growing
+del c:/sqlBackups/*.*
+
+
+c:\"program files"\7-zip\7z.exe a c:\SQLBackups\TegnonEfficiency_weekly_%date:~-4,4%%date:~-10,2%%date:~-7,2%.zip c:\SQLBackups\log.txt c:\SQLBackups\TegnonEfficiency_weekly_*.*
+REM aws s3 cp c:\SQLBackups\TegnonEfficiency_%date:~-4,4%%date:~-10,2%%date:~-7,2%.zip s3://t
+aws s3 cp c:/sqlBackups/TegnonEfficiency_weekly_%date:~-4,4%%date:~-10,2%%date:~-7,2%.zip s3://tegnon/tegnonEfficiency/weekly/ --profile b2
 
 
 date /T

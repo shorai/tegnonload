@@ -9,18 +9,18 @@ dbcc sqlperf(LOGSPACE);
 
 CHECKPOINT
 BACKUP LOG TegnonEfficiency
-TO DISK = 'C:\SQLBackups\TegnonEfficiency_log1.trn' 
+TO DISK = 'C:\SQLBackups\TegnonEfficiency_weekly_log1.trn' 
 WITH INIT; 
 GO 
 
 BACKUP DATABASE TegnonEfficiency
-TO DISK = 'C:\SQLBackups\TegnonEfficiency.bak' 
+TO DISK = 'C:\SQLBackups\TegnonEfficiency_weekly.bak' 
 
 
 DBCC SQLPERF(LOGSPACE);
 
 BACKUP LOG TegnonEfficiency
-TO DISK = 'C:\SQLBackups\TegnonEfficiency_log2.trn' 
+TO DISK = 'C:\SQLBackups\TegnonEfficiency_weekly_log2.trn' 
 WITH INIT; 
 GO 
 -- may be useful to do a checkpoint here https://technet.microsoft.com/en-us/library/ms189085.aspx
@@ -33,7 +33,7 @@ DBCC SQLPERF(LOGSPACE);
 -- Backup a third time to move transaction records to the front of the log
 -- GArbage collection is all but useless in microsoft
 BACKUP LOG TegnonEfficiency
-TO DISK = 'C:\SQLBackups\TegnonEfficiency_log3.trn' 
+TO DISK = 'C:\SQLBackups\TegnonEfficiency_weekly_log3.trn' 
 WITH INIT; 
 GO 
 
@@ -54,3 +54,11 @@ DBCC SHRINKFILE(N'TegnonEfficiency_log' , target_size=0);
 ALTER DATABASE TegnonEfficiency SET RECOVERY FULL;
 DBCC SQLPERF(LOGSPACE);
 */
+
+CHECKPOINT
+-- should now rebuild all indices
+EXEC sp_MSforeachtable @command1="print '?' DBCC DBREINDEX ('?', ' ', 80)"
+GO
+EXEC sp_updatestats
+GO
+CHECKPOINT
