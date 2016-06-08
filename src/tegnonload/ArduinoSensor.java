@@ -56,6 +56,14 @@ public class ArduinoSensor {
             }
             sensorUnits = Integer.decode(strs[index++]);
             measurmentType =Integer.decode(strs[index++]);
+            
+            // 8 June 2016 - Koos vdW email 
+            // Dew point reading.... comes in as a 16 bit signed integer scaled by 100
+            //     REading from PI fails if dewpoint < 0 degrees centigrade (intteger wrap to 327.67
+            // here we correct for it
+            if ((measurmentType==35) && (sensorValue > 163.84))
+                sensorValue-=327.67;
+            
             numSensorReadings++;
         } else {
             numShortLines++;
