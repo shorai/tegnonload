@@ -15,7 +15,7 @@ import static tegnonload.PiLine.logger;
  */
 public class ArduinoSensor {
 
-    static final Logger logger = Logger.getLogger("ArduinoSensor");
+    static final Logger logger = TegnonLoad.tegnonLogger.getLogger("ArduinoSensor");
     
     static int numBadValues = 0;
     static int numSensorReadings = 0;
@@ -29,10 +29,12 @@ public class ArduinoSensor {
     int measurmentType; //Refers to TID in MeasureType Table
 
     static {
-         logger.setLevel(Level.WARNING);
+         //logger.setLevel(Level.WARNING);
         logger.addHandler(TegnonLoad.logHandler);
     }
 
+    
+   
     ArduinoSensor( int lineNumber, String[] strs, int index) throws Exception {
         if (strs.length >= index + 4) {
             sensorType = Integer.decode(strs[index++]);
@@ -61,8 +63,10 @@ public class ArduinoSensor {
             // Dew point reading.... comes in as a 16 bit signed integer scaled by 100
             //     REading from PI fails if dewpoint < 0 degrees centigrade (intteger wrap to 327.67
             // here we correct for it
-            if ((measurmentType==35) && (sensorValue > 163.84))
+            if ((sensorType==35) && (sensorValue > 163.84)) {
                 sensorValue-=327.67;
+                logger.info("Corrected Dewpoint to " + sensorValue);
+            }
             
             numSensorReadings++;
         } else {
@@ -80,7 +84,9 @@ static void zeroStat() {
     String head() {
         return "SType: \tStatus \t   Value \tUnits \tMeasure";
     }
-
+ public String toString() {
+        return "Arduino:" + sensorType + " Status:"+ sensorStatus + " Value:"+ sensorValue;
+    }
     String show() {
         String str = "";
         str = str.format(" %d \t%d \t%8.2f \t%d \t%d",

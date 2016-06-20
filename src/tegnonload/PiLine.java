@@ -17,7 +17,7 @@ import static tegnonload.Sensor.logger;
  */
 public class PiLine {
 
-    static final Logger logger = Logger.getLogger("PiLine");
+    static final Logger logger = TegnonLoad.tegnonLogger.getLogger("PiLine");
   static final DateFormat df = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     static int numLines = 0;
     
@@ -39,8 +39,8 @@ public class PiLine {
     ArduinoSensor[] sensors = new ArduinoSensor[10];
 
     static {
-        logger.addHandler(TegnonLoad.logHandler);
-        logger.setLevel(Level.INFO);
+       // logger.addHandler(TegnonLoad.logHandler);
+       // logger.setLevel(Level.INFO);
         //TegnonLoad.logHandler.setLevel(Level.INFO);
     }
 

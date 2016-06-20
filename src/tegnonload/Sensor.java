@@ -29,7 +29,7 @@ public class Sensor {
 
     static int inserts = 0;
 
-    static final Logger logger = Logger.getLogger("Sensor");
+    static final Logger logger = TegnonLoad.tegnonLogger.getLogger("Sensor");
 
     static HashMap<String, Sensor> sensors = new HashMap<String, Sensor>();
 
@@ -42,12 +42,16 @@ public class Sensor {
     int netId;
     int columnNumber;
 
-    Statistic stat = new Statistic(this,Calendar.getInstance());
+    Statistic stat;// = new Statistic(this,Calendar.getInstance());
 
     //SensorID	DeviceID	SensorTypeTID	SensorUnitTID	MeasurementTypeTID	LineID	NetworkID	SensorNumber",
     static {
-        logger.setLevel(Level.INFO);
-        logger.addHandler(TegnonLoad.logHandler);
+        //logger.setLevel(Level.INFO);
+        //logger.addHandler(TegnonLoad.logHandler);
+    }
+
+    public String toString() {
+        return ("Sensor [" + id + "] Device:" + device.toString() + " TypeTID:" + typeTID + " Line:" + lineId + " NetID:" + netId + " ColNumber:" + columnNumber);
     }
 
     public Sensor(ResultSet rs) throws SQLException {
@@ -62,6 +66,7 @@ public class Sensor {
         netId = rs.getInt(i++);
         columnNumber = rs.getInt(i++);
         sensors.put(key(), this);
+        stat = new Statistic(this,Calendar.getInstance());
     }
 
     public Sensor(Device dev, ArduinoSensor as, int colNumber) throws SQLException {
@@ -71,11 +76,17 @@ public class Sensor {
         unitTID = as.sensorUnits;
         measureTID = as.measurmentType;
         columnNumber = colNumber;
-
-        insert();
         sensors.put(key(), this);
+        stat = new Statistic(this,Calendar.getInstance());
+        try {
+            insert();
+        } catch (SQLException exc) {
+            logger.severe("Sensor insert failed Device:" + dev.toString() + " Arduino:" + as.toString() + " Column: " + colNumber);
+        }
+
     }
-/*
+
+    /*
     public Sensor(String vals) {
         String[] strs = vals.split("[\t ]+");
 
@@ -119,7 +130,7 @@ public class Sensor {
         }
         //System.out.println("   sensor dev:"+ device.key() + "," + id);
     }
-*/
+     */
     String key() {
         return "" + device.key() + "," + columnNumber + "," + typeTID;
     }
@@ -152,20 +163,22 @@ public class Sensor {
     static void writeSQL(Integer messageId) {
         //System.out.println("******************************************************** writeSQL for " + sensors.size());
         for (Sensor s : sensors.values()) {
-            s.stat.setTimes();
-            
-            
-          //  if ((s.typeTID == 20) || (s.typeTID == 20)) {
-            if (s.typeTID == 20) {
-                s.stat.writeEnergySQL(messageId);
-            } else {
-                s.stat.writeFlowSQL(messageId);
-            }
-            
-            SensorDataHour.instance.addHalfHour(s.stat);
-        }
-        //System.out.println(" SensorDataHour updated for " + count + " records");
+            Statistic stat = s.stat;
+            if (stat != null) {
+                stat.setTimes();
 
+                //  if ((s.typeTID == 20) || (s.typeTID == 20)) {
+                if (s.typeTID == 20) {
+                    stat.writeEnergySQL(messageId);
+                } else {
+                    stat.writeFlowSQL(messageId);
+                }
+                if (stat.count > 0) {
+                    SensorDataHour.instance.addHalfHour(stat); // this does not get called??
+                }
+            }
+            //System.out.println(" SensorDataHour updated for " + count + " records");
+        }
     }
 
     static void loadSQL(Connection conn) throws SQLException {
@@ -176,7 +189,7 @@ public class Sensor {
         }
     }
 //java.sql.SQLException: The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Sensors_SensorType". The conflict occurred in database "TegnonEfficiency", table "dbo.SensorType", column 'SensorTypeID'.
-	
+
     void insert() throws SQLException {
         if (insertStatement == null) {
             insertStatement = TegnonLoad.conn.prepareStatement(insertSQL);
@@ -199,10 +212,10 @@ public class Sensor {
         ResultSet rs = findByIdStatement.executeQuery();
         rs.next();
         id = rs.getInt(1);
-        logger.info("Sensor.insert " + id + " " + device.key() + " Devid:" + device.deviceID + " Type:" + typeTID + " Column:"+ columnNumber);
+        logger.info("Sensor.insert " + id + " " + device.key() + " Devid:" + device.deviceID + " Type:" + typeTID + " Column:" + columnNumber);
         inserts++;
     }
-/*
+    /*
     //SensorID	DeviceID	SensorTypeTID	SensorUnitTID	MeasurementTypeTID	LineID	NetworkID	SensorNumber",
     static final String[] sensorData = {
         "657	157	1	4	1	NULL	1	1",
@@ -646,5 +659,5 @@ public class Sensor {
         }
 
     }
-*/
+     */
 }

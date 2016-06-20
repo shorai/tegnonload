@@ -228,7 +228,7 @@ This is the simplest approach, least flexible and scalable
 
      d) run.bat
 		java   -jar TegnonLoad.jar
-		sqlcmd -d TegnonEfficiency -U javaUser1 -P hghufd8764f89 -i tegnonload.sql
+		//sqlcmd -d TegnonEfficiency -U javaUser1 -P hghufd8764f89 -i tegnonload.sql
 
 
 
@@ -291,7 +291,7 @@ This is the simplest approach, least flexible and scalable
 21) Version 2
 
          A mail retrieval program is currently being used , the extractor/installer is in the 
-		       csripts/version2 folder. It neads to be run
+		       c:/sripts/version2 folder. It neads to be run
 	     Create a path C:\Tegnon\tegnonefficiencydatagmail.com\za.tegnon.consol@gmail.com
 		        for it to work in
 

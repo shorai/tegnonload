@@ -47,7 +47,7 @@ public class TegnonLoad {
 
     static final int NUMBER_OF_FILES_TO_RUN = 4000;   // @TODO: Crashed 15 April 2016 on 14K files of about 20K
 
-    static final Logger logger = Logger.getLogger("TegnonLoad");
+    static public final Logger tegnonLogger = Logger.getLogger("tegnonload");
     static Handler logHandler = null;
 
     static final String dirName = "C:\\Tegnon\\tegnonefficiencydatagmail.com\\za.tegnon.consol@gmail.com";
@@ -114,12 +114,12 @@ static final String createTableSQL = "create table LoadStats (
 
     //java.util.logging.Formatter lf = new SimpleFormatter();
     /**
-     * The TEgnon logs have been made available throught he PHP / Laravel
+     * The TEgnon logs have been made available through the PHP / Laravel
      * programs
      *
      * Access is unrestricted and at <URL>/TegLog  <URL>/TegLog0 .. <URL>/TegLog9
      *
-     * These should be brought under the Admin page
+     * These are available under the Admin tab
      *
      *
      * Normal logging is at the INFO level, use FINE, FINER FINEST for debugging
@@ -132,7 +132,15 @@ static final String createTableSQL = "create table LoadStats (
             logHandler = new FileHandler("c:/inetpub/wwwroot/app/storage/TegnonLogs/TegnonLoad.log", LOG_SIZE, LOG_ROTATION_COUNT);
             logHandler.setFormatter(new SimpleFormatter());
             logger.setLevel(Level.INFO);
+            logger.setUseParentHandlers(false);
+            
+            Handler  h[] = logger.getHandlers();
+            logger.info("There were " + h.length + " log handlers");
+           // logger.removeHandler(h[0]);
             logger.addHandler(logHandler);
+            h = logger.getHandlers();
+            logger.info("There are " + h.length + " log handlers");            
+//logger.info("Started Logger in program 15 June 2016"); // placed this here because I think MS is running old version in scheduler
         } catch (Exception exc) {
             System.out.println("Failed to create a log ... Aaargh");
             System.exit(2);
@@ -144,9 +152,10 @@ static final String createTableSQL = "create table LoadStats (
         // Create a variable for the connection string.
      /*   String username = "javaUser1";
         String password = "sHxXWij02AE4ciJre7yX";
-        */
-     String username = "TegnonLoadUser";
-        String password = "04fGvbJCTOrtxofpq0Bf";
+        */   String username = "javaUser1";
+        String password = "sHxXWij02AE4ciJre7yX";
+    // String username = "TegnonLoadUser";
+     //   String password = "04fGvbJCTOrtxofpq0Bf";
         // String connectionUrl = "jdbc:sqlserver://localhost:1433;databaseName=TegnonEfficiency";
         String connectionUrl = "jdbc:jtds:sqlserver://localhost/TegnonEfficiency";
 

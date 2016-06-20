@@ -29,7 +29,7 @@ public class Device {
     
     static int inserts = 0;
     
-    static final Logger logger = Logger.getLogger("Device");
+    static final Logger logger = TegnonLoad.tegnonLogger.getLogger("Device");
 
     static HashMap<String, Device> devices = new HashMap<String, Device>();
     static HashMap<Integer, Device> devicesById = new HashMap<Integer, Device>();
@@ -53,7 +53,7 @@ public class Device {
 
     static {
          logger.setLevel(Level.WARNING);
-        logger.addHandler(TegnonLoad.logHandler);
+        //logger.addHandler(TegnonLoad.logHandler);
     }
 
     public Device (ResultSet rs) throws SQLException {
@@ -136,6 +136,9 @@ public class Device {
         return facilityInfo + "|" + modbusAddr + "|" + serialNumber;
     }
 
+    public String toString() {
+        return "Device["+ deviceID + "]" + key();
+    }
     static public Device find(String facilityInfo, int modbusAddr, int serialNumber) {
 
         return devices.get(facilityInfo + "|" + modbusAddr + "|" + serialNumber);

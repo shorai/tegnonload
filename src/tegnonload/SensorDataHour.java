@@ -11,6 +11,7 @@ import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static tegnonload.TegnonLoad.tegnonLogger;
 
 /**
  *
@@ -24,7 +25,7 @@ import java.util.logging.Logger;
  */
 public class SensorDataHour {
 
-    static final Logger logger = Logger.getLogger("Statistic");
+    static final Logger logger = tegnonLogger.getLogger("tegnonload.SensorDataHour");
 
     static PreparedStatement insertStatement = null;
     static PreparedStatement updateStatement = null;
@@ -55,6 +56,10 @@ public class SensorDataHour {
     Double min;
 
     static {
+          logger.setUseParentHandlers(false);
+       // logger.setLevel(Level.INFO);
+        logger.addHandler(TegnonLoad.logHandler);
+ 
         try {
             instance = new SensorDataHour();
         } catch (SQLException exc) {
@@ -71,7 +76,7 @@ public class SensorDataHour {
     }
 
     public String toString() {
-        return "SensorDataHour:" + sensor + " Time:" + startTime + "Type:" + sensor.typeTID
+        return " SensorDataHour:" + sensor + " Time:" + df.format(startTime.getTime()) + "Type:" + sensor.typeTID
                 + " Count:" + count + " Val:" + sum + " max:" + max
                 + " min:" + min + "squares:" + sumSquares;
     }
@@ -95,35 +100,42 @@ public class SensorDataHour {
      * @param stat
      */
     public void addHalfHour(Statistic stat) { //throws SQLException {
-
+        if (stat.count==0) return;
+        logger.info("AddHalfHour " + stat.toString());
         Statistic other;
         Calendar t = stat.startTime;
 
         if (t.get(Calendar.MINUTE) == 0) {
             t.set(Calendar.MINUTE, 30);
+            
         } else {
             t.set(Calendar.MINUTE, 0);
         }
-        int update = 1;
-        try {
-            other = new Statistic(stat.sensor.id, t, stat.sensor.typeTID);
-        } catch (SQLException exc) {
-            update = 0;
-            other = new Statistic(stat.sensor, t);
-        }
-
+        t.set(Calendar.SECOND, 0);
+        t.set(Calendar.MILLISECOND, 0);
+            
+        
+        other = new Statistic(stat.sensor, t);
+        
+        logger.info("Other:"+ other.toString());
         sensor = stat.sensor;
-        startTime = stat.startTime;
+        startTime = t; //stat.startTime;
+        startTime.set(Calendar.MINUTE,0);
         count = stat.count + other.count;
         sum = (stat.sum + other.sum)/count;
         sumSquares = stat.sumSquares + other.sumSquares;
+        max = ((stat.max > other.max)?stat.max:other.max);
+        min = ((stat.min > other.min)?stat.min:other.min);
+        
         try {
             if (count > 0) {
                 // @TODO: Why do we get here with zero count??
-                if (update == 1) {
+                if (other.onServer) {
                     updateSql();
+                    logger.info("SensorDataHour updated :" + toString());
                 } else {
                     insertSql();
+                    logger.info("SensorDataHour inserted :" + toString());
                 }
                 if ((sensor.typeTID == 19) || (sensor.typeTID == 20)) {
                     numEnergy++;
@@ -131,7 +143,7 @@ public class SensorDataHour {
                     numFlow++;
                 }
             } else {
-                logger.info("SensorDataHour Count is Zero" + toString());
+                logger.info("SensorDataHour Count is Zero (No data for this sensor)" + toString());
             }
         } catch (SQLException sexc) {
             logger.info("SensorDataHour:" + toString());
@@ -145,8 +157,15 @@ public class SensorDataHour {
             insertStatement = TegnonLoad.conn.prepareStatement(insertSql);
         }
         int i = 1;
+        
+        // change 10 June 2016 to ensure we only get hourly records on file 
+        startTime.set(Calendar.MINUTE, 0);
+        startTime.set(Calendar.SECOND, 0);
+        startTime.set(Calendar.MILLISECOND, 0);
+        
         java.util.Date dt = startTime.getTime();
         java.sql.Timestamp ts = new java.sql.Timestamp(dt.getTime());
+        
         if (max == null) {
             max = 0.00;
         }
@@ -183,6 +202,11 @@ public class SensorDataHour {
             updateStatement = TegnonLoad.conn.prepareStatement(updateSql);
         }
         int i = 1;
+        // change 10 June 2016 to ensure we only get hourly records on file 
+        startTime.set(Calendar.MINUTE, 0);
+        startTime.set(Calendar.SECOND, 0);
+        startTime.set(Calendar.MILLISECOND, 0);
+        
         java.util.Date dt = startTime.getTime();
         java.sql.Timestamp ts = new java.sql.Timestamp(dt.getTime());
         updateStatement.setInt(i++, count);

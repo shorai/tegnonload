@@ -24,7 +24,7 @@ import java.util.logging.Logger;
  * @author chris.rowse
  */
 public class SensorDataNormal {
-static final Logger logger = Logger.getLogger("SensorDataNormal");
+static final Logger logger = TegnonLoad.tegnonLogger.getLogger("tegnonload.SensorDataNormal");
 
     static final String findSql = "select ID,attachmentId, SensorValue, SensorCalculatedType, SensorCalculatedValue "
             + " from SensorDataNormal"
@@ -59,11 +59,21 @@ static final Logger logger = Logger.getLogger("SensorDataNormal");
 
     static public SensorDataNormal instance = new SensorDataNormal();
 
+    public String toString() { 
+        return "SensorDataNormal Id(" + id + ") Sensor:" + ((sensor==null)?"null":sensor.toString())
+                + " SensorType:" +((sensorType==null)?"null": sensorType) 
+                + " Value:" + value;
+    }
+    
     static void init(Connection conn) throws SQLException {
+       // logger.setLevel(Level.INFO);
+       // logger.addHandler(TegnonLoad.logHandler);
+        
         instance = new SensorDataNormal();
         findStatement = TegnonLoad.conn.prepareStatement(findSql);
         insertStatement = TegnonLoad.conn.prepareStatement(insertSql);
         updateStatement = TegnonLoad.conn.prepareStatement(updateSql);
+        logger.setLevel(Level.WARNING);
     }
     
     
@@ -119,13 +129,14 @@ static final Logger logger = Logger.getLogger("SensorDataNormal");
         try {
         //java.sql.Timestamp time = new java.sql.Timestamp(stat.startTime.getTimeInMillis()); //new java.sql.Timestamp(df.parse(pi.timeStamp).getTime());
         Sensor s = stat.sensor;
+        this.sensor = s;
         value = val;        
         if (findStatement ==null)
             init(TegnonLoad.conn);
         findStatement.setInt(i++, s.id);
         findStatement.setTimestamp(i++, new java.sql.Timestamp(time.getTimeInMillis()));
         findStatement.setInt(i++, s.typeTID);
-
+        sensorType = s.typeTID;
         ResultSet rs = findStatement.executeQuery();
         if (rs.next()) {
             i = 1;
@@ -144,6 +155,7 @@ static final Logger logger = Logger.getLogger("SensorDataNormal");
 
             updateStatement.execute();
             numUpdates++;
+            logger.fine("SensorDataNormal Updated:"+ toString());
         } else {
             i = 1;
             insertStatement.setInt(i++, attachmentId);
@@ -161,6 +173,7 @@ static final Logger logger = Logger.getLogger("SensorDataNormal");
             
             insertStatement.execute();
             numInserts++;
+            logger.fine("SensorDataNormal Inserted:"+ toString());
         }
     } catch (SQLException sexc) {
         logger.log(Level.SEVERE,"SensorDataNormal "+ sexc.getMessage(),sexc);

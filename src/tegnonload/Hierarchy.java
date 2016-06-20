@@ -17,7 +17,7 @@ import java.util.logging.Logger;
  */
 public class Hierarchy {
     
-    static final Logger logger = Logger.getLogger("Hierarchy");
+    static final Logger logger = TegnonLoad.tegnonLogger.getLogger("Hierarchy");
     static HashMap<String,Hierarchy> byLocation = new HashMap<String,Hierarchy>();
     
        int countryID;
@@ -69,7 +69,11 @@ public class Hierarchy {
       
       static void load(Connection conn) {
           try {
-              ResultSet rs = conn.createStatement().executeQuery("select * from Heirarchy");
+              ResultSet rs = conn.createStatement().executeQuery(
+                      "select countryID, country, clientID, client, siteID,site"
+                              + ", locationID, location, networkID, network, lineID, line"
+                              + ", deviceID, device, sensorID, sensorTypeTID, sensor"
+                              + "  from Heirarchy");
               while(rs.next()) {
                   new Hierarchy(rs);
               }
