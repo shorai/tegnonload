@@ -173,9 +173,10 @@ public class Sensor {
                 } else {
                     stat.writeFlowSQL(messageId);
                 }
-                if (stat.count > 0) {
+              /*  if (stat.count > 0) {
                     SensorDataHour.instance.addHalfHour(stat); // this does not get called??
                 }
+                */
             }
             //System.out.println(" SensorDataHour updated for " + count + " records");
         }

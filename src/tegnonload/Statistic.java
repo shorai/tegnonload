@@ -235,7 +235,7 @@ public class Statistic {
         logger.info("Retry Update completed:" + s);
     }
 
-    void toDb(Integer messageId, Sensor sensor, Integer sensorType) { //, Integer recordCount,
+    void toDb(Integer messageId) { //, Sensor sensor, Integer sensorType) { //, Integer recordCount,
         //Double sensorValue, Double sumOfSquares, Double max, Double min) {
 
         java.sql.Timestamp ts = new java.sql.Timestamp(startTime.getTimeInMillis());
@@ -250,7 +250,7 @@ public class Statistic {
             // look for record on DB
             findStatement.setInt(1, sensor.id);
             findStatement.setTimestamp(2, ts); //new java.sql.Time(startTime.getTime().getTime()));
-            findStatement.setInt(3, sensorType);
+            findStatement.setInt(3, sensor.typeTID); //sensorType);
 
             ResultSet rs = findStatement.executeQuery();
             rs.next();
@@ -258,7 +258,7 @@ public class Statistic {
             rs.close();
 
             logger.info("Lookup SensorDataHalfHour SensorId:" + sensor.id
-                    + " Time:" + ts + " typeTID:" + sensorType + " Count:" + recordsOnFile);
+                    + " Time:" + ts + " typeTID:" + sensor.typeTID + " Count:" + recordsOnFile);
 
             Double rms = 0.00;
             Double sd = 0.00;
@@ -290,7 +290,7 @@ public class Statistic {
                     insertStatement.setInt(i++, messageId);
                     insertStatement.setInt(i++, sensor.id);
                     insertStatement.setTimestamp(i++, ts);
-                    insertStatement.setInt(i++, sensorType);
+                    insertStatement.setInt(i++, sensor.typeTID);
                     insertStatement.setInt(i++, count);
                     insertStatement.setDouble(i++, sum);
                     insertStatement.setDouble(i++, sumSquares);
@@ -333,31 +333,31 @@ java.sql.SQLException: Violation of PRIMARY KEY constraint 'PK_SensorDataHalfHou
                     updateStatement.setInt(i++, sensor.id);
                     updateStatement.setTimestamp(i++, ts);
                     // updateStatement.setDate(i++, startTime.getTime());
-                    updateStatement.setInt(i++, sensorType);
+                    updateStatement.setInt(i++, sensor.typeTID);
 
                     //int cnt = updateStatement.executeUpdate();
                     logger.info(" Updating " + messageId + "," + count + ","
                             + sum + "," + max + "," + min + ","
                             + sumSquares + "," + rms + "," + sd + ","
-                            + sensor.id + "," + ts + "," + sensorType);
+                            + sensor.id + "," + ts + "," + sensor.typeTID);
 
                     boolean cnt = false;
                     try {
                         updateStatement.execute();
                     } catch (SQLException xx) {
                         logger.warning(" Failed update - retrying" + xx.getMessage());
-                        retryUpdate(messageId, sensor, sensorType, rms, sd);
+                        retryUpdate(messageId, sensor, sensor.typeTID, rms, sd);
                     }
 
 //if (cnt == 1) {
                     if (cnt) {
-                        logger.log(Level.FINE, " One Energy Record updated:" + dump());
+                        logger.log(Level.FINE, " One Statistic updated:" + dump());
                     } else {
-                        logger.log(Level.INFO, "Energy Record not updated[" + cnt + "]" + dump());
+                        logger.log(Level.INFO, "Statistic Record not updated[" + cnt + "]" + dump());
                     }
                     //logger.log(Level.FINEST,"Updated Record " + dump());
                 } else {
-                    logger.log(Level.INFO, "Dummy UpdateRecord " + dump());
+                    logger.log(Level.INFO, "Dummy Update Statistic " + dump());
                 }
                 numUpdated++;
             }
@@ -365,7 +365,7 @@ java.sql.SQLException: Violation of PRIMARY KEY constraint 'PK_SensorDataHalfHou
         } catch (Exception exc) {
             logger.log(Level.SEVERE, "Statistic.toDB():SQL error "
                     + " SensorID:" + sensor.id + " Time:" + ts //df.format(startTime.getTime()) 
-                    + " Type:" + sensorType + " Count:" + count + " "
+                    + " Type:" + sensor.typeTID + " Count:" + count + " "
                     + exc.getMessage(), exc);
             numErrors++;
         }
@@ -374,12 +374,20 @@ java.sql.SQLException: Violation of PRIMARY KEY constraint 'PK_SensorDataHalfHou
 
     void writeFlowSQL(Integer messageId) {
         if (sum > 0.00) {
-            toDb(messageId, sensor, sensor.typeTID); //, count, sum, max, min, sumSquares);
+            toDb(messageId); //, sensor, sensor.typeTID); //, count, sum, max, min, sumSquares);
+              SensorDataHour.instance.addHalfHour(this);
             logger.log(Level.INFO, "Stat.writeFlow  " + dump());
             numFlow++;
         }
     }
-
+/**
+ * The Half hour and hour tables contain consumption figures for the period
+ * Energy readings are cumulative modulo 65535
+ * Here we convert cumulative readings to usage assuming no more than 1 rollover per period
+ * This is a fudge  but works OK
+ * We should really create a clone Sensor and statistic 
+ * @param messageId 
+ */
     void writeEnergySQL(Integer messageId) {
 
         Double val = last - first;
@@ -393,8 +401,13 @@ java.sql.SQLException: Violation of PRIMARY KEY constraint 'PK_SensorDataHalfHou
             count = 60;
             this.sum = val;
             this.sumSquares = val * val;
-            toDb(messageId, sensor, 19);
-            logger.log(Level.INFO, "Stat.written Energy  " + dump() + " Energy Calc:" + val);
+               
+            int type = sensor.typeTID;
+            sensor.typeTID = 19;
+            toDb(messageId); //, sensor, 19);
+            SensorDataHour.instance.addHalfHour(this);
+            logger.info("Stat.writeEnergy  " + dump() + " Energy Calc:" + val);
+            sensor.typeTID= type;
             numEnergy++;
         }
         /*else  {
