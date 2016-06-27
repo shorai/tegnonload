@@ -101,7 +101,7 @@ public class SensorDataHour {
      */
     public void addHalfHour(Statistic stat) { //throws SQLException {
         if (stat.count==0) return;
-        logger.info("AddHalfHour " + stat.toString());
+        logger.fine("AddHalfHour " + stat.toString());
         Statistic other;
         Calendar t = stat.startTime;
 
@@ -117,7 +117,7 @@ public class SensorDataHour {
         
         other = new Statistic(stat.sensor, t);
         
-        logger.info("Other:"+ other.toString());
+        logger.fine("Other:"+ other.toString());
         sensor = stat.sensor;
         startTime = t; //stat.startTime;
         startTime.set(Calendar.MINUTE,0);
@@ -132,7 +132,7 @@ public class SensorDataHour {
                 // @TODO: Why do we get here with zero count??
                 if (other.onServer) {
                     updateSql();
-                    logger.info("SensorDataHour updated :" + toString());
+                    logger.info("SensorDataHour updated :" + toString()+ " addedValue:"+ other.sum/other.count + " count:"+other.count);
                 } else {
                     insertSql();
                     logger.info("SensorDataHour inserted :" + toString());
