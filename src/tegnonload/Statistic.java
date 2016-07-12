@@ -10,7 +10,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.util.logging.Level;
@@ -33,6 +33,8 @@ public class Statistic {
     static final String updateSql = "update SensorDataHalfHour set attachmentID=?,  recordCount=?, sensorValue=?,maximum=?, minimum=?, sumOfSquares=?, RMS=?, standardDeviation=? where sensorId=? and startTime=? and sensorType=?";
     static final String findSql = "select count(*) from SensorDataHalfHour where sensorID=? and startTime=? and sensorType=?";
     static final String loadSql = "select RecordCount,SensorValue,Maximum,Minimum,SUmOfSquares from SensorDataHalfHour where sensorID=? and startTime=? and sensorType=?";
+
+    static final DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     static int numInserted = 0;
     static int numUpdated = 0;
@@ -207,10 +209,19 @@ public class Statistic {
     static final String retrySql = "update SensorDataHalfHour set attachmentID=%d,  recordCount=%d,"
             + " sensorValue=%f,maximum=%f, minimum=%f, sumOfSquares=%f, RMS=%f, standardDeviation=%f "
             + "where sensorId=%d and startTime='%s' and sensorType=%d";
-
+/**
+ * WARNING:  Failed update - retrying Parameter #7 has not been set.
+ * @TODO Why on earth are we getting this error only from this update??
+ * @param messageId
+ * @param sensor
+ * @param sensorType
+ * @param rms
+ * @param sd
+ * @throws SQLException 
+ */
     void retryUpdate(Integer messageId, Sensor sensor, Integer sensorType, Double rms, Double sd) throws SQLException {
 
-        String sts = startTime.toString();
+        String sts = df.format(startTime);
 
         String s = String.format(retrySql, messageId, count, sum, max, min, sumSquares, rms, sd, sensor.id, sts, sensorType);
 
@@ -246,11 +257,11 @@ public class Statistic {
 
             if ((rms == null) || (rms.isNaN()) || (rms.isInfinite())) {
                 logger.warning("Computed RMS value was not acceptable:" + rms);
-                rms = 0.00;
+                rms = new Double(0.00);
             }
             if ((sd == null) || (sd.isNaN()) || (sd.isInfinite())) {
                 logger.warning("Computed StandardDeviation was unacceptable:" + sd);
-                sd = 0.00;
+                sd = new Double(0.00);
             }
 
             int i = 1;
@@ -305,6 +316,10 @@ public class Statistic {
                         logger.log(Level.FINE, " One Statistic updated:" + dump());
                     } catch (SQLException xx) {
                         logger.warning(" Failed update - retrying " + xx.getMessage());
+                        /*
+                        WARNING:  Failed update - retrying Parameter #7 has not been set.
+                        @TODO:   why do we get this message?? everything seems to be set ok, other updates succeed
+                        */
                         retryUpdate(messageId, sensor, sensor.typeTID, rms, sd);
                     }
 
