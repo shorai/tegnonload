@@ -15,7 +15,7 @@ import static tegnonload.PiLine.logger;
  */
 public class ArduinoSensor {
 
-    static final Logger logger = TegnonLoad.tegnonLogger.getLogger("ArduinoSensor");
+    static final Logger logger = TegnonLoad.tegnonLogger.getLogger("tegnonload.ArduinoSensor");
     
     static int numBadValues = 0;
     static int numSensorReadings = 0;
@@ -30,6 +30,9 @@ public class ArduinoSensor {
 
     static {
          //logger.setLevel(Level.WARNING);
+       // logger.addHandler(TegnonLoad.logHandler);
+               logger.setUseParentHandlers(false);
+        // logger.setLevel(Level.INFO);
         logger.addHandler(TegnonLoad.logHandler);
     }
 

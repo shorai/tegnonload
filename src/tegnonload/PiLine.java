@@ -10,6 +10,7 @@ import java.util.Calendar;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import static tegnonload.Sensor.logger;
+import static tegnonload.Statistic.logger;
 
 /**
  *
@@ -17,7 +18,7 @@ import static tegnonload.Sensor.logger;
  */
 public class PiLine {
 
-    static final Logger logger = TegnonLoad.tegnonLogger.getLogger("PiLine");
+    static final Logger logger = TegnonLoad.tegnonLogger.getLogger("tegnonload.PiLine");
   static final DateFormat df = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     static int numLines = 0;
     
@@ -39,6 +40,9 @@ public class PiLine {
     ArduinoSensor[] sensors = new ArduinoSensor[10];
 
     static {
+               logger.setUseParentHandlers(false);
+        // logger.setLevel(Level.INFO);
+        logger.addHandler(TegnonLoad.logHandler);
        // logger.addHandler(TegnonLoad.logHandler);
        // logger.setLevel(Level.INFO);
         //TegnonLoad.logHandler.setLevel(Level.INFO);
@@ -97,11 +101,18 @@ public class PiLine {
                             + " SensorIs:"+ s.key() + " Sensors.Type:" + s.typeTID);
                 }
                  */
-                s.stat.add(timeStamp, as.sensorValue);
+                 
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(df.parse(timeStamp));
+                if (cal == null)
+                    logger.severe("Cal is null"); 
+                Statistic stat = s.getStat(cal);
+                stat.add(cal,as.sensorValue);
+                SensorDataNormal.instance.save(stat, cal, as.sensorValue); 
                 j++;
                 numLines++;
             } catch (Exception exc) {
-                logger.log(Level.SEVERE, "Cant add stat " + strs + " Device:" + facilityInfo + "|" + modbusAddr + "|" + deviceSerialNumber, exc);
+                logger.log(Level.SEVERE, "Cant add stat " + strs + " Device:" + facilityInfo + "|" + modbusAddr + "|" + deviceSerialNumber + " Date:" + timeStamp, exc);
                 numFails++;
             }
         }

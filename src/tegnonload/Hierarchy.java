@@ -17,7 +17,7 @@ import java.util.logging.Logger;
  */
 public class Hierarchy {
     
-    static final Logger logger = TegnonLoad.tegnonLogger.getLogger("Hierarchy");
+    static final Logger logger = TegnonLoad.tegnonLogger.getLogger("tegnonload.Hierarchy");
     static HashMap<String,Hierarchy> byLocation = new HashMap<String,Hierarchy>();
     
        int countryID;
@@ -38,7 +38,11 @@ public class Hierarchy {
       int sensorTypeTID;
       String sensor;
       
-      
+   static {
+              logger.setUseParentHandlers(false);
+        // logger.setLevel(Level.INFO);
+        logger.addHandler(TegnonLoad.logHandler);
+   }   
       Hierarchy(ResultSet r) {
       try {
     int i = 1;

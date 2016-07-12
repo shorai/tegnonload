@@ -29,7 +29,7 @@ public class Sensor {
 
     static int inserts = 0;
 
-    static final Logger logger = TegnonLoad.tegnonLogger.getLogger("Sensor");
+    static final Logger logger = TegnonLoad.tegnonLogger.getLogger("tegnonload.Sensor");
 
     static HashMap<String, Sensor> sensors = new HashMap<String, Sensor>();
 
@@ -46,6 +46,9 @@ public class Sensor {
 
     //SensorID	DeviceID	SensorTypeTID	SensorUnitTID	MeasurementTypeTID	LineID	NetworkID	SensorNumber",
     static {
+               logger.setUseParentHandlers(false);
+        // logger.setLevel(Level.INFO);
+        logger.addHandler(TegnonLoad.logHandler);
         //logger.setLevel(Level.INFO);
         //logger.addHandler(TegnonLoad.logHandler);
     }
@@ -66,7 +69,7 @@ public class Sensor {
         netId = rs.getInt(i++);
         columnNumber = rs.getInt(i++);
         sensors.put(key(), this);
-        stat = new Statistic(this,Calendar.getInstance());
+        stat = null; // new Statistic(this,Calendar.getInstance());
     }
 
     public Sensor(Device dev, ArduinoSensor as, int colNumber) throws SQLException {
@@ -77,7 +80,7 @@ public class Sensor {
         measureTID = as.measurmentType;
         columnNumber = colNumber;
         sensors.put(key(), this);
-        stat = new Statistic(this,Calendar.getInstance());
+        stat = null; // new Statistic(this,Calendar.getInstance());
         try {
             insert();
         } catch (SQLException exc) {
@@ -141,13 +144,24 @@ public class Sensor {
 
     }
 
+    Statistic getStat(Calendar cal) {
+        if (cal == null)
+            logger.severe("Cal is null");
+        if (stat == null) {
+            stat = new Statistic(this,cal);
+        }
+         stat.setStartTime(cal);
+        return stat;
+    }
+    
     static void zeroStat() {
         inserts = 0;
     }
 
     static void zeroTots() {
         for (Sensor s : sensors.values()) {
-            s.stat.zero();
+            if (s.stat != null)
+                s.stat.zero();
         }
     }
 
@@ -155,22 +169,26 @@ public class Sensor {
         System.out.println("****************************************************** Sensors Dump");
 
         for (Sensor s : sensors.values()) {
-            System.out.println(s.id + " " + s.device.key() + " Devid:" + s.device.deviceID + " Type:" + s.typeTID + " Sum" + s.stat.sum);
+            System.out.println(s.id + " " + s.device.key() + " Devid:" + s.device.deviceID + " Type:" + s.typeTID );
         }
 
     }
 
     static void writeSQL(Integer messageId) {
-        //System.out.println("******************************************************** writeSQL for " + sensors.size());
         for (Sensor s : sensors.values()) {
             Statistic stat = s.stat;
             if (stat != null) {
-                stat.setTimes();
+                //stat.setTimes();
 
                 //  if ((s.typeTID == 20) || (s.typeTID == 20)) {
                 if (s.typeTID == 20) {
-                    stat.writeEnergySQL(messageId);
+                   if (stat.last != stat.first)  {
+                       // logger.info("******************************************************** writeEnergySQL for " + stat.toString());
+                        stat.writeEnergySQL(messageId);
+                   }
                 } else {
+                    
+                   logger.info("======================================================== writeFlowSQL for " + stat.toString());
                     stat.writeFlowSQL(messageId);
                 }
               /*  if (stat.count > 0) {

@@ -29,7 +29,7 @@ public class Device {
     
     static int inserts = 0;
     
-    static final Logger logger = TegnonLoad.tegnonLogger.getLogger("Device");
+    static final Logger logger = TegnonLoad.tegnonLogger.getLogger("tegnonload.Device");
 
     static HashMap<String, Device> devices = new HashMap<String, Device>();
     static HashMap<Integer, Device> devicesById = new HashMap<Integer, Device>();
@@ -53,6 +53,9 @@ public class Device {
 
     static {
          logger.setLevel(Level.WARNING);
+                logger.setUseParentHandlers(false);
+        // logger.setLevel(Level.INFO);
+        logger.addHandler(TegnonLoad.logHandler);
         //logger.addHandler(TegnonLoad.logHandler);
     }
 

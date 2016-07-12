@@ -58,7 +58,11 @@ static final Logger logger = TegnonLoad.tegnonLogger.getLogger("tegnonload.Senso
     Double calcValue = new Double(0.00);
 
     static public SensorDataNormal instance = new SensorDataNormal();
-
+static {
+           logger.setUseParentHandlers(false);
+        // logger.setLevel(Level.INFO);
+        logger.addHandler(TegnonLoad.logHandler);
+}
     public String toString() { 
         return "SensorDataNormal Id(" + id + ") Sensor:" + ((sensor==null)?"null":sensor.toString())
                 + " SensorType:" +((sensorType==null)?"null": sensorType) 
