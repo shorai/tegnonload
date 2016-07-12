@@ -5,12 +5,11 @@
  */
 package tegnonload;
 
-import java.text.DateFormat;
-import java.util.Calendar;
+import java.time.LocalDateTime;
+import java.time.Month;
+import java.time.format.DateTimeFormatter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import static tegnonload.Sensor.logger;
-import static tegnonload.Statistic.logger;
 
 /**
  *
@@ -19,13 +18,13 @@ import static tegnonload.Statistic.logger;
 public class PiLine {
 
     static final Logger logger = TegnonLoad.tegnonLogger.getLogger("tegnonload.PiLine");
-  static final DateFormat df = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    static final DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     static int numLines = 0;
-    
+
     static int numFails = 0;
     static String facility = null;
-    static Calendar firstTime= null;
-    
+    static LocalDateTime firstTime = null;
+
     String timeStamp;          // The date and time of the recorded date
     String facilityInfo;       // Sensor Location
     String deviceCommonName;   //  Sensor Name
@@ -40,17 +39,13 @@ public class PiLine {
     ArduinoSensor[] sensors = new ArduinoSensor[10];
 
     static {
-               logger.setUseParentHandlers(false);
-        // logger.setLevel(Level.INFO);
+        logger.setUseParentHandlers(false);
+
         logger.addHandler(TegnonLoad.logHandler);
-       // logger.addHandler(TegnonLoad.logHandler);
-       // logger.setLevel(Level.INFO);
-        //TegnonLoad.logHandler.setLevel(Level.INFO);
     }
 
     PiLine(String[] strs) throws Exception {
 
-        //String[] strs = str.split("[|]");
         int i = 0;
         timeStamp = strs[i++];
         facilityInfo = strs[i++]; // array index out of bounds   1??
@@ -59,24 +54,24 @@ public class PiLine {
         try {
             deviceSerialNumber = Integer.parseInt(strs[i++]);
         } catch (Exception exd) {
-            logger.warning("Device Serial nUmber not numeric:" + strs[i-1] + exd.getMessage());
+            logger.warning("Device Serial nUmber not numeric:" + strs[i - 1] + exd.getMessage());
             deviceSerialNumber = -1;
         }
         try {
             deviceTimeAlive = Integer.decode(strs[i++]);
-        } catch (Exception exc) { 
-            logger.warning("DeviceTimeAlive not numeric :"+ strs[i-1] + " " + exc.getMessage());
+        } catch (Exception exc) {
+            logger.warning("DeviceTimeAlive not numeric :" + strs[i - 1] + " " + exc.getMessage());
             deviceTimeAlive = -100;
-          }
+        }
         deviceStatus = Integer.decode(strs[i++]);
         dataReadMode = Integer.decode(strs[i++]);
         deviceVoltage = Integer.decode(strs[i++]);
         numberOfAttachedSensors = Integer.decode(strs[i++]);
-        
+
         facility = facilityInfo;
-        firstTime = Calendar.getInstance();
-        firstTime.setTime(df.parse(timeStamp));
-        
+
+        firstTime = LocalDateTime.parse(timeStamp, df);
+
         int j = 0;
 
         if (deviceStatus == 65535) {
@@ -92,23 +87,18 @@ public class PiLine {
                 if (d == null) {
                     d = new Device(this);
                 }
-                Sensor s = Sensor.find(d, j+1, as.sensorType);
+                Sensor s = Sensor.find(d, j + 1, as.sensorType);
                 if (s == null) {
-                    s = new Sensor(d, as, j+1);
+                    s = new Sensor(d, as, j + 1);
                 }
-                /* if (as.sensorType == 20) {
-                    logger.info("Energy Sensor " + d.facilityInfo + ":" + d.name + " Sensor:" + s.id + " Key:" +s.key() + " Type:" + as.sensorType + " Value:" + as.sensorValue 
-                            + " SensorIs:"+ s.key() + " Sensors.Type:" + s.typeTID);
+
+                LocalDateTime ldt = LocalDateTime.parse(timeStamp, df);
+                if (ldt == null) {
+                    logger.severe("LocalDateTiem wouldn'yt parse PiLine(strs[])");
                 }
-                 */
-                 
-                Calendar cal = Calendar.getInstance();
-                cal.setTime(df.parse(timeStamp));
-                if (cal == null)
-                    logger.severe("Cal is null"); 
-                Statistic stat = s.getStat(cal);
-                stat.add(cal,as.sensorValue);
-                SensorDataNormal.instance.save(stat, cal, as.sensorValue); 
+                Statistic stat = s.getStat(ldt);
+                stat.add(ldt, as.sensorValue);
+                SensorDataNormal.instance.save(stat, ldt, as.sensorValue);
                 j++;
                 numLines++;
             } catch (Exception exc) {
@@ -117,20 +107,15 @@ public class PiLine {
             }
         }
     }
-static public void zeroStat() {
+
+    static public void zeroStat() {
         facility = "Unknown";
-        try {
-            firstTime = Calendar.getInstance();
-        firstTime.setTime(df.parse("2000/01/01 00:00:00"));
-        } catch (Exception exc) {
-            firstTime = Calendar.getInstance();
-            firstTime.setTime(new java.util.Date());
-            firstTime.set(Calendar.YEAR,2000);
-        }
+
+        firstTime = LocalDateTime.of(2000, 01, 01, 00, 00);
+
         numLines = 0;
         numFails = 0;
     }
-
 
     String show() {
         String str = "";

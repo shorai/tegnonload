@@ -9,11 +9,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.DateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Calendar;
-import java.util.Date;
+import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -35,8 +34,6 @@ public class Statistic {
     static final String findSql = "select count(*) from SensorDataHalfHour where sensorID=? and startTime=? and sensorType=?";
     static final String loadSql = "select RecordCount,SensorValue,Maximum,Minimum,SUmOfSquares from SensorDataHalfHour where sensorID=? and startTime=? and sensorType=?";
 
-    static final DateFormat df = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
     static int numInserted = 0;
     static int numUpdated = 0;
     static int numErrors = 0;
@@ -44,12 +41,10 @@ public class Statistic {
     static int numEnergy = 0;
 
     Sensor sensor;
-    //java.sql.Date startTime;
-   Calendar startTime;
-    Calendar endTime;
-//LocalDateTime startTime;
-//LocalDateTime endTime;
-    
+
+    LocalDateTime startTime;
+    LocalDateTime endTime;
+
     Double first;
     Double last;
     Double sum;
@@ -61,74 +56,48 @@ public class Statistic {
     boolean onServer = false;
 
     static {
-        // logger.setLevel(Level.INFO);
+
         logger.setUseParentHandlers(false);
         logger.addHandler(TegnonLoad.logHandler);
     }
 
     public String toString() {
         return " Statistic " + ((sensor == null) ? "Null sensor" : sensor.toString())
-                + " StartTime:" + ((startTime == null) ? "Null Date" : df.format(startTime.getTime()))
-                //+ " Value :" + ((count > 0) ? sum / count : "No Data");
+                + " StartTime:" + ((startTime == null) ? "Null Date" : startTime)
                 + " Value :" + ((count > 0) ? sum : "No Data") + " OnFile:" + onServer;
     }
 
-   
-    public void setStartTime(Calendar cal) {
-        if (cal == null) {
-            logger.severe("Cal is null");
-        }
-        // long t = cal.getTimeInMillis();
+    public void setStartTime(LocalDateTime ldt) {
 
-        startTime = Calendar.getInstance();
-        startTime.setTimeInMillis(cal.getTimeInMillis()); //setTimeInMillis(t);
+        startTime = LocalDateTime.from(ldt).truncatedTo(ChronoUnit.MINUTES);
 
-        if (startTime.get(Calendar.MINUTE) >= 30) {
-            startTime.set(Calendar.MINUTE, 30);
+        if (startTime.getMinute() >= 30) {
+            startTime = startTime.with(ChronoField.MINUTE_OF_HOUR, 30);
+            endTime = startTime.with(ChronoField.MINUTE_OF_HOUR, 59);
+
         } else {
-            startTime.set(Calendar.MINUTE, 0);
+            startTime = startTime.with(ChronoField.MINUTE_OF_HOUR, 0);
+            endTime = startTime.with(ChronoField.MINUTE_OF_HOUR, 29);
         }
-        startTime.set(Calendar.SECOND, 0);
-        startTime.set(Calendar.MILLISECOND, 0);
-
-        endTime = Calendar.getInstance();
-        endTime.setTimeInMillis(startTime.getTimeInMillis());
-        endTime.add(Calendar.SECOND, 30 * 60 - 1);
+        endTime = endTime.withSecond(59).withNano(999999999);
     }
 
-    public Statistic(Sensor sensor, Calendar cal) { //throws SQLException {
-        zero();
-        //  java.util.Date dt = startTime.getTime();
-        //  java.sql.Timestamp ts = new java.sql.Timestamp(dt.getTime());
-
-        this.sensor = sensor;
-        setStartTime(cal);
-        onServer = false;
-        tryLoad();
-    }
-    
     public Statistic(Sensor sensor, LocalDateTime ldt) { //throws SQLException {
-    
-        zero();
-        //  java.util.Date dt = startTime.getTime();
-        //  java.sql.Timestamp ts = new java.sql.Timestamp(dt.getTime());
 
+        zero();
         this.sensor = sensor;
-        java.util.Date out = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(out);
-        setStartTime(cal);
+        setStartTime(ldt);
         onServer = false;
         tryLoad();
     }
-    
+
     void tryLoad() {
         try {
             if (loadStatement == null) {
                 loadStatement = TegnonLoad.conn.prepareStatement(loadSql);
             }
             loadStatement.setInt(1, sensor.id);
-            loadStatement.setTimestamp(2, new java.sql.Timestamp(startTime.getTimeInMillis()));
+            loadStatement.setTimestamp(2, java.sql.Timestamp.valueOf(startTime));
             loadStatement.setInt(3, ((sensor.typeTID == 20) ? 19 : sensor.typeTID));
 
             ResultSet rs = loadStatement.executeQuery();
@@ -140,13 +109,13 @@ public class Statistic {
                 min = rs.getDouble(i++);
                 sumSquares = rs.getDouble(i++);
                 onServer = true;
-                logger.info("Statistic loaded from DB " + sensor.id + "  " + df.format(startTime.getTime()));
+                logger.info("Statistic loaded from DB " + sensor.id + "  " + startTime);
             } else {
-                logger.info("Statistic load no results found " + sensor.id + "  " + df.format(startTime.getTime()));
+                logger.info("Statistic load no results found " + sensor.id + "  " + startTime);
             }
         } catch (SQLException exc) {
 
-            logger.warning("Statistic lookup failed: " + sensor.id + "  " + df.format(startTime.getTime()));
+            logger.warning("Statistic lookup failed: " + sensor.id + "  " + startTime);
         }
 
     }
@@ -156,13 +125,11 @@ public class Statistic {
      *
      * @return the statistic for the immediately preceding half hour
      */
-
     Statistic getPrevious() {
-        Calendar cal = Calendar.getInstance();
-        cal.setTimeInMillis(startTime.getTimeInMillis());
-        cal.add(Calendar.MINUTE, -30);
-        Statistic stat = new Statistic(this.sensor, cal);
-        logger.info("Find Prev SD Half hour:" + sensor.id + " @:" + df.format(cal.getTime()) + ((stat.onServer) ? " Found" : " Not Found") + " Max:" + stat.max);
+        LocalDateTime ldt = startTime.minusMinutes(30);
+
+        Statistic stat = new Statistic(this.sensor, ldt);
+        logger.info("Find Prev SD Half hour:" + sensor.id + " for:" + startTime + " @:" + ldt + ((stat.onServer) ? " Found" : " Not Found") + " Max:" + stat.max);
 
         return stat;
     }
@@ -174,7 +141,6 @@ public class Statistic {
             findStatement = TegnonLoad.conn.prepareStatement(findSql);
 
         } catch (Exception exc) {
-            //System.out.println("Statistic():" + exc.getMessage());
             logger.log(Level.SEVERE, "Statistic():" + exc.getMessage(), exc);
             TegnonLoad.conn = null;
         }
@@ -199,23 +165,20 @@ public class Statistic {
 
     }
 
-    public void add(Calendar date, Double value) throws Exception {
+    public void add(LocalDateTime ldt, Double value) throws Exception {
         if (count == 0) {
             first = value;
             last = value;
             if (value > 0.0) {
                 min = value;
             }
-            endTime = date;
+            endTime = LocalDateTime.from(ldt);
             sum = value;
             sumSquares += (value * value);
 
         } else {
-            // if (date.compareTo(endTime) > 0) { // endtime already set to end of period,
-            //may need to implement an 'lastTime' 
-            //    endTime = date;
+
             last = value;
-            //}
             sum += value;
             sumSquares += (value * value);
             if (max < value) {
@@ -226,52 +189,18 @@ public class Statistic {
                 min = value;
 
             }
-
         }
         count++;
-        // SensorDataNormal.instance.save(this, date, value); 
     }
 
     static String getSqlStat() {
         return "Inserted:" + numInserted + " Updated:" + numUpdated + " Errors:" + numErrors;
     }
 
-    /*
-    void setTimes() {
-
-        startTime.set(Calendar.SECOND, 0);
-        startTime.set(Calendar.MILLISECOND, 0);
-
-        if (startTime.get(Calendar.MINUTE) < 30) {
-            startTime.set(Calendar.MINUTE, 0);
-        } else {
-            startTime.set(Calendar.MINUTE, 30);
-        }
-
-        if (endTime == null) {
-            endTime = startTime;
-        }
-
-        endTime.set(Calendar.SECOND, 59);
-        endTime.set(Calendar.MILLISECOND, 999);
-
-        if (endTime.get(Calendar.MINUTE) < 30) {
-            endTime.set(Calendar.MINUTE, 29);
-        } else {
-            endTime.set(Calendar.MINUTE, 59);
-        }
-
-    }
-    
-     */
     String dump() {
         String timeStr = startTime.toString();
-        try {
-            timeStr = df.format(startTime.getTime());
-        } catch (Exception ext) {
-            logger.severe(timeStr + " df.format " + ext.getMessage());
-        }
-        return sensor.key() + "\t" + df.format(startTime.getTime()) + "\t" + df.format(endTime.getTime())
+
+        return sensor.key() + "\t" + startTime + "\t" + endTime
                 + "\t First:" + first + "\tLast:" + last + "\tSum:" + sum
                 + "\tMax:" + max + "\tMin:" + min + "\tCount:" + count;
     }
@@ -281,7 +210,7 @@ public class Statistic {
 
     void retryUpdate(Integer messageId, Sensor sensor, Integer sensorType, Double rms, Double sd) throws SQLException {
 
-        String sts = df.format(startTime.getTime());
+        String sts = startTime.toString();
 
         String s = String.format(retrySql, messageId, count, sum, max, min, sumSquares, rms, sd, sensor.id, sts, sensorType);
 
@@ -291,20 +220,12 @@ public class Statistic {
     }
 
     void toDb(Integer messageId) { //, Sensor sensor, Integer sensorType) { //, Integer recordCount,
-        //Double sensorValue, Double sumOfSquares, Double max, Double min) {
 
-        //java.sql.Timestamp ts = new java.sql.Timestamp(startTime.getTimeInMillis());
-        /*
-        java.sql.SQLException: Violation of PRIMARY KEY constraint 'PK_SensorDataHalfHour'. 
-        Cannot insert duplicate key in object 'dbo.SensorDataHalfHour'. 
-        The duplicate key value is (785, Apr 25 2016  5:00PM, 19).
-
-         */
         int recordsOnFile = -1;
         try {
             // look for record on DB
             findStatement.setInt(1, sensor.id);
-            findStatement.setTimestamp(2, new java.sql.Timestamp(startTime.getTimeInMillis())); //new java.sql.Time(startTime.getTime().getTime()));
+            findStatement.setTimestamp(2, java.sql.Timestamp.valueOf(startTime)); //new java.sql.Time(startTime.getTime().getTime()));
             findStatement.setInt(3, sensor.typeTID); //sensorType);
 
             ResultSet rs = findStatement.executeQuery();
@@ -313,7 +234,7 @@ public class Statistic {
             rs.close();
 
             logger.info("Lookup SensorDataHalfHour SensorId:" + sensor.id
-                    + " Time:" + df.format(startTime.getTime()) + " typeTID:" + sensor.typeTID + " Count:" + recordsOnFile);
+                    + " Time:" + startTime + " typeTID:" + sensor.typeTID + " Count:" + recordsOnFile);
 
             Double rms = 0.00;
             Double sd = 0.00;
@@ -322,13 +243,7 @@ public class Statistic {
                 rms = Math.sqrt(sumSquares / count);
                 sd = Math.sqrt(Math.abs(sumSquares - sum * sum) / count);
             }
-            /*
-            sum = Math.round(sum * 10000.00) / 10000.00;
-            sumSquares = Math.round(sumSquares * 10000.00) / 10000.00;
 
-            rms = Math.round(rms * 10000.00) / 10000.00;
-            sd = Math.round(sd * 10000.00) / 10000.00;
-             */
             if ((rms == null) || (rms.isNaN()) || (rms.isInfinite())) {
                 logger.warning("Computed RMS value was not acceptable:" + rms);
                 rms = 0.00;
@@ -343,7 +258,7 @@ public class Statistic {
                 if (TegnonLoad.UPDATE_DATA) {
                     insertStatement.setInt(i++, messageId);
                     insertStatement.setInt(i++, sensor.id);
-                    insertStatement.setTimestamp(i++, new java.sql.Timestamp(startTime.getTimeInMillis()));
+                    insertStatement.setTimestamp(i++, java.sql.Timestamp.valueOf(startTime));
                     insertStatement.setInt(i++, sensor.typeTID);
                     insertStatement.setInt(i++, count);
                     insertStatement.setDouble(i++, sum);
@@ -352,17 +267,7 @@ public class Statistic {
                     insertStatement.setDouble(i++, sumSquares);
                     insertStatement.setDouble(i++, rms);
                     insertStatement.setDouble(i++, sd);
-                    /*
-SEVERE: Statistic.toDB():SQL error 
-                    SensorID:785 Time:2016-04-25 20:00:00.0 Type:20 Count:0 
-                    Violation of PRIMARY KEY constraint 'PK_SensorDataHalfHour'. 
-                    Cannot insert duplicate key in object 'dbo.SensorDataHalfHour'. 
-                    The duplicate key value is (785, Apr 25 2016  8:00PM, 19).
-java.sql.SQLException: Violation of PRIMARY KEY constraint 'PK_SensorDataHalfHour'. 
-                    Cannot insert duplicate key in object 'dbo.SensorDataHalfHour'. 
-                    The duplicate key value is (785, Apr 25 2016  8:00PM, 19).
 
-                     */
                     insertStatement.execute();
                     logger.log(Level.FINE, "InsertRecord " + dump());
                 } else {
@@ -385,7 +290,7 @@ java.sql.SQLException: Violation of PRIMARY KEY constraint 'PK_SensorDataHalfHou
                     insertStatement.setDouble(i++, sd);
 
                     updateStatement.setInt(i++, sensor.id);
-                    updateStatement.setTimestamp(i++, new java.sql.Timestamp(startTime.getTimeInMillis()));
+                    updateStatement.setTimestamp(i++, java.sql.Timestamp.valueOf(startTime));
                     // updateStatement.setDate(i++, startTime.getTime());
                     updateStatement.setInt(i++, sensor.typeTID);
 
@@ -393,7 +298,7 @@ java.sql.SQLException: Violation of PRIMARY KEY constraint 'PK_SensorDataHalfHou
                     logger.info(" Updating " + messageId + "," + count + ","
                             + sum + "," + max + "," + min + ","
                             + sumSquares + "," + rms + "," + sd + ","
-                            + sensor.id + "," + df.format(startTime.getTime()) + "," + sensor.typeTID);
+                            + sensor.id + "," + startTime + "," + sensor.typeTID);
 
                     try {
                         updateStatement.execute();
@@ -403,7 +308,6 @@ java.sql.SQLException: Violation of PRIMARY KEY constraint 'PK_SensorDataHalfHou
                         retryUpdate(messageId, sensor, sensor.typeTID, rms, sd);
                     }
 
-                    //logger.log(Level.FINEST,"Updated Record " + dump());
                 } else {
                     logger.log(Level.INFO, "Dummy Update Statistic " + dump());
                 }
@@ -412,7 +316,7 @@ java.sql.SQLException: Violation of PRIMARY KEY constraint 'PK_SensorDataHalfHou
 
         } catch (Exception exc) {
             logger.log(Level.SEVERE, "Statistic.toDB():SQL error "
-                    + " SensorID:" + sensor.id + " Time:" + df.format(startTime.getTime()) //df.format(startTime.getTime()) 
+                    + " SensorID:" + sensor.id + " Time:" + startTime //startTime.getTime()) 
                     + " Type:" + sensor.typeTID + " Count:" + count + " "
                     + exc.getMessage(), exc);
             numErrors++;
@@ -424,7 +328,7 @@ java.sql.SQLException: Violation of PRIMARY KEY constraint 'PK_SensorDataHalfHou
         if (sum > 0.00) {
             toDb(messageId); //, sensor, sensor.typeTID); //, count, sum, max, min, sumSquares);
             logger.log(Level.INFO, "Stat.writeFlow  " + dump());
-            SensorDataHour instance = SensorDataHour.factory(this.sensor, LocalDateTime.ofInstant(startTime.toInstant(), ZoneId.systemDefault()));// this.startTime);
+            SensorDataHour instance = SensorDataHour.factory(this.sensor, startTime);// this.startTime);
             instance.addHalfHour(this);
             numFlow++;
         }
@@ -441,38 +345,36 @@ java.sql.SQLException: Violation of PRIMARY KEY constraint 'PK_SensorDataHalfHou
     void writeEnergySQL(Integer messageId) {
 
         Double val = last - first;
-    logger.info("******************************************************** writeEnergySQL for\r\n " + this.toString());
-          
+        logger.info("******************************************************** writeEnergySQL for\r\n " + this.toString());
+
         max = last;
         min = first;
         Statistic prev = getPrevious();
         if (prev.onServer) {
-            logger.info("Previous Stat found change min energy from " + min + " to :" + prev.max + "  value from" + val + " to"+(max-prev.max));
+            logger.info("Previous Stat found change min energy from " + min + " to :" + prev.max + "  value from" + val + " to" + (max - prev.max));
             min = prev.max;
-            val = max - min;    
+            val = max - min;
         } else {
             logger.info("Previous Stat not found min energy is  " + min + " Value is:" + val);
         }
-         if (val < 0.0) {
-                val += 32767.0;
-            }
+        if (val < 0.0) {
+            val += 32767.0;
+        }
         if (val > 0.00) {
-             //sensorType = 19;
-
             count = 60;
             this.sum = val;
             this.sumSquares = val * val;
 
             int type = sensor.typeTID;
             sensor.typeTID = 19;
-            toDb(messageId); //, sensor, 19);
+            toDb(messageId);
             logger.info("Stat.writeEnergy  " + dump() + " Energy Calc:" + val);
-            SensorDataHour instance = SensorDataHour.factory(sensor, LocalDateTime.ofInstant(startTime.toInstant(), ZoneId.systemDefault()));
+            SensorDataHour instance = SensorDataHour.factory(sensor, startTime);
             instance.addHalfHour(this);
             sensor.typeTID = type;
             numEnergy++;
         } else if (val < -1.00) {
-            try { //if (startTime != null)
+            try {
                 logger.log(Level.WARNING, "Stat.writeEnergy (last:" + last + " -first:" + first + ") less than zero " + val + " " + dump());
             } catch (Exception exx) {
                 logger.severe("Stat.writeEnergy Exception" + exx.getMessage());

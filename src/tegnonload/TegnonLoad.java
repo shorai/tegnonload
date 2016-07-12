@@ -8,16 +8,14 @@ package tegnonload;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.util.Calendar;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Vector;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -40,57 +38,30 @@ public class TegnonLoad {
 
     // These two vars allow us to test without detroying data
     static final boolean DEBUG = false;
+    /**
+     * if UPDATE_DATA is false, programs goes through the motions without real
+     * DB updates AThe files will be left unprocessed in the input directory
+     */
     static final boolean UPDATE_DATA = true;
+
+    /**
+     * If set, data are moved from wherever to processed/za/client/site/ folder
+     * Allows to reprocess processed files in situ in processed directory Useful
+     * for big reruns
+     */
+    static boolean MOVE_DATA = true;
 
     static final int LOG_SIZE = 1000000;
     static final int LOG_ROTATION_COUNT = 10;
 
     static final int NUMBER_OF_FILES_TO_RUN = 4000;   // @TODO: Crashed 15 April 2016 on 14K files of about 20K
-
+    // possibly need to garbage collect every 5000 or so files
     static public final Logger tegnonLogger = Logger.getLogger("tegnonload");
     static Handler logHandler = null;
 
     static final String dirName = "C:\\Tegnon\\tegnonefficiencydatagmail.com\\za.tegnon.consol@gmail.com";
     static final String outName = "C:\\Tegnon\\tegnonefficiencydatagmail.com\\processed";
-    // static final String outName = "C:\\Tegnon\\processed";
 
-    static final DateFormat df = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-    static final DateFormat dfx = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    /*
-static final String createTableSQL = "create table LoadStats (
-	id int not null IDENTITY(1,1) PRIMARY KEY, 
-	newFilePath varchar(255),	
-	fileName varchar(255),        
-	fileSize int,
-        facility  varchar(255),
-        DateCreated DateTime,
-	DateProcessed DateTime,
-	readLines int,
-        insufficientParameters int,
-        DeviceInserts int,
-        SensorInserts int,
-    
-        StatEnergy int,
-        StatFlow int,
-        StatInserted int,
-        StatUpdated int,
-    
-        PiLines int,
-        PiFails int,
-    
-        ArdBadValues int,
-        ArdReadings int,
-        ArdShortLines int,
-	ArdFailed int;
-    
-        DataNormalInserts int;
-      
-        DataHourInserts int;
-        DataHourUpdates int;
-    
-        milliseconds int;
-)");     
-     */
     static final String insertStatSQL = "insert into LoadStats (newFilePath,fileName,fileSize,"
             + "facility,DateCreated,DateProcessed,"
             + "readLines,insufficientParameters,"
@@ -112,7 +83,6 @@ static final String createTableSQL = "create table LoadStats (
 
     public static Connection conn;
 
-    //java.util.logging.Formatter lf = new SimpleFormatter();
     /**
      * The TEgnon logs have been made available through the PHP / Laravel
      * programs
@@ -128,19 +98,16 @@ static final String createTableSQL = "create table LoadStats (
     static {
         try {
             new File("logs").mkdir();
-            // logHandler = new FileHandler("logs/TegnonLoad.log", LOG_SIZE, LOG_ROTATION_COUNT);
             logHandler = new FileHandler("c:/inetpub/wwwroot/app/storage/TegnonLogs/TegnonLoad.log", LOG_SIZE, LOG_ROTATION_COUNT);
             logHandler.setFormatter(new SimpleFormatter());
             logger.setLevel(Level.INFO);
             logger.setUseParentHandlers(false);
-            
-            Handler  h[] = logger.getHandlers();
+
+            Handler h[] = logger.getHandlers();
             logger.info("There were " + h.length + " log handlers");
-           // logger.removeHandler(h[0]);
             logger.addHandler(logHandler);
             h = logger.getHandlers();
-            logger.info("There are " + h.length + " log handlers");            
-//logger.info("Started Logger in program 15 June 2016"); // placed this here because I think MS is running old version in scheduler
+            logger.info("There are " + h.length + " log handlers");
         } catch (Exception exc) {
             System.out.println("Failed to create a log ... Aaargh");
             System.exit(2);
@@ -150,18 +117,13 @@ static final String createTableSQL = "create table LoadStats (
 
     static public void connectSQL() {
         // Create a variable for the connection string.
-     /*   String username = "javaUser1";
+        String username = "javaUser1";
         String password = "sHxXWij02AE4ciJre7yX";
-        */   String username = "javaUser1";
-        String password = "sHxXWij02AE4ciJre7yX";
-    // String username = "TegnonLoadUser";
-     //   String password = "04fGvbJCTOrtxofpq0Bf";
-        // String connectionUrl = "jdbc:sqlserver://localhost:1433;databaseName=TegnonEfficiency";
+
         String connectionUrl = "jdbc:jtds:sqlserver://localhost/TegnonEfficiency";
 
-        // Declare the JDBC objects.
         try {
-            // Establish the connection.
+
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
             conn = DriverManager.getConnection(connectionUrl, username, password);
             System.out.println("Connection Succeeded");
@@ -187,7 +149,7 @@ static final String createTableSQL = "create table LoadStats (
     }
 
     void insertStat(String newFilePath, String fileName, long fileSize,
-            String facility, Calendar dateCreated, long milliseconds) {
+            String facility, LocalDateTime created, long milliseconds) {
         int i = 1;
         String fname = fileName.substring(fileName.lastIndexOf('\\') + 1);
         try {
@@ -199,9 +161,9 @@ static final String createTableSQL = "create table LoadStats (
             loadStatStatement.setString(i++, fileName);
             loadStatStatement.setLong(i++, fileSize);
             loadStatStatement.setString(i++, facility);
-            loadStatStatement.setTimestamp(i++, new java.sql.Timestamp(dateCreated.getTimeInMillis()));
+            loadStatStatement.setTimestamp(i++, java.sql.Timestamp.valueOf(created));
 
-            loadStatStatement.setTimestamp(i++, new java.sql.Timestamp(new java.util.Date().getTime()));
+            loadStatStatement.setTimestamp(i++, java.sql.Timestamp.valueOf(LocalDateTime.now()));
             loadStatStatement.setInt(i++, readLines);
             loadStatStatement.setInt(i++, insufficientParameters);
             loadStatStatement.setInt(i++, Device.inserts);
@@ -237,8 +199,8 @@ static final String createTableSQL = "create table LoadStats (
         }
     }
 
-    void runFile(String fileName) {
-        long milliseconds = new java.util.Date().getTime();
+    void runFile(String fileName, boolean moveData) {
+        LocalDateTime milliseconds = LocalDateTime.now();
         long filesize = 0;
         File f = null;
         String newPath = "";
@@ -256,8 +218,6 @@ static final String createTableSQL = "create table LoadStats (
             while (str != null) {
 
                 readLines++;
-                //if(br.ready()) {
-                //System.out.println("Read line :" + str);
                 if (str.trim().length() > 0) {
                     String[] strs = str.split("[|]");
                     if (strs.length > 1) {
@@ -284,28 +244,27 @@ static final String createTableSQL = "create table LoadStats (
 
             }
             br.close();
-            //conn.executeQuery("Begin trans " + filename);
+
             Sensor.writeSQL(-1); //messageId);
-            //conn.executeQuery("commit trans " + filename);
-            //  conn.commit();
+
             System.out.println(Statistic.getSqlStat());
             logger.info(Statistic.getSqlStat());
-            Calendar created = PiLine.firstTime;
-        
+            LocalDateTime created = PiLine.firstTime;
+
             newPath = PiLine.facility.replace(".", "/");
-            
-            insertStat(newPath, f.getName(), filesize, PiLine.facility, created, new java.util.Date().getTime() - milliseconds);
+
+            insertStat(newPath, f.getName(), filesize, PiLine.facility, created, LocalDateTime.now().compareTo(milliseconds));
 
             Sensor.zeroTots();
-            // can throw exception
-            if (UPDATE_DATA) {
+
+            if ((UPDATE_DATA) && (moveData)) {  // move files from load directory to processed
                 String newName = outName + File.separatorChar + newPath + File.separatorChar + f.getName();
                 try {
                     File np = new File(newName);
                     // CopyOptions not all implemented or working, ATOMIC excludes others
                     np.mkdirs();
                     java.nio.file.Files.move(f.toPath(), np.toPath(),
-                            StandardCopyOption.REPLACE_EXISTING); //, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.COPY_ATTRIBUTES);
+                            StandardCopyOption.REPLACE_EXISTING);
 
                     System.out.println("File moved successfully to " + newName);
                     logger.finest("File moved successfully to " + newName);
@@ -320,10 +279,10 @@ static final String createTableSQL = "create table LoadStats (
             exc.printStackTrace();
         }
         System.out.println("Pilines scanned = " + piLines.size());
-        //logOnSQL(fileName, facilityInfo);
+
     }
 
-    public void runDirectory(String dir) {
+    public void runDirectory(String dir, boolean moveData) {
         File f = new File(dir);
         int count = 0;
 
@@ -331,7 +290,7 @@ static final String createTableSQL = "create table LoadStats (
             System.out.println("Processing directory: " + dir);
             for (File g : f.listFiles()) {
                 if (g.getName().endsWith(".txt")) {
-                    runFile(g.getAbsolutePath());
+                    runFile(g.getAbsolutePath(), moveData);
                     System.out.println(" " + count++ + " Loaded:" + g.getAbsolutePath());
                 } else {
                     System.out.println(" " + count + " Did not process:" + g.getAbsolutePath());
@@ -344,19 +303,8 @@ static final String createTableSQL = "create table LoadStats (
 
     }
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String[] args) {
-        // TODO code application logic here
-        /*
-        if (args.length > 0) {
-            System.out.println(args[0]);
-            for (int i = 0; i < args.length; i++) {
-                System.out.println("" + i + "  " + args[i]);
-            }
-        }
-         */
+    public void preload() {
+
         try {
             File f = new File(outName);
             f.mkdirs();
@@ -379,10 +327,6 @@ static final String createTableSQL = "create table LoadStats (
             if (DEBUG) {
                 Sensor.dump();
             }
-            //conn = null;
-            TegnonLoad x = new TegnonLoad();
-            x.runDirectory(dirName);
-
         } catch (SQLException sexc) {
             logger.log(Level.SEVERE, "SQL Exception " + sexc.getMessage(), sexc);
         } catch (Exception exc) {
@@ -391,18 +335,28 @@ static final String createTableSQL = "create table LoadStats (
 
     }
 
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String[] args) {
+
+        TegnonLoad x = new TegnonLoad();
+        x.preload();
+        x.runDirectory(dirName, MOVE_DATA);
+
+    }
+
     private class MyFormatter extends java.util.logging.Formatter {
 
         @Override
         public String format(LogRecord lr) {
-            //String str;
 
             return String.format("%s %s %s %s %d %s", lr.getLevel(),
-                    df.format(new java.util.Date(lr.getMillis())), lr.getLoggerName(),
+                    LocalDateTime.ofInstant(Instant.ofEpochMilli(lr.getMillis()), ZoneId.systemDefault()),
+                    lr.getLoggerName(),
                     lr.getSourceClassName(), lr.getThreadID(),
                     lr.getThrown());
 
-            //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
 
     }
