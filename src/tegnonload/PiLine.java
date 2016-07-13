@@ -97,7 +97,11 @@ public class PiLine {
                     logger.severe("LocalDateTiem wouldn'yt parse PiLine(strs[])");
                 }
                 Statistic stat = s.getStat(ldt);
-                stat.add(ldt, as.sensorValue);
+                if (as.sensorStatus == 65535) {
+                    logger.warning("Sensor status 655535" + show());
+                } else {
+                    stat.add(ldt, as.sensorValue);
+                }
                 SensorDataNormal.instance.save(stat, ldt, as.sensorValue);
                 j++;
                 numLines++;

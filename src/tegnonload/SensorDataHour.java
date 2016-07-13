@@ -213,11 +213,10 @@ public class SensorDataHour {
             sb.append("\r\nRec  :").append(stat.startTime).append("\t").append(stat.count).append("\t").append(stat.sum).append("\t").append(stat.max).append("\t").append(stat.min).append("\t").append(rms).append("\t").append(sd);
             sb.append("\r\nOther:").append(other.startTime).append("\t").append(other.count).append("\t").append(other.sum).append("\t").append(other.max).append("\t").append(other.min).append("\t").append(rms).append("\t").append(sd);
 
+            // this should not be necessary since half hour records (statistics) are already corected
             if ((sensortypeTID == 19) || (sensortypeTID == 20)) {
-                sum = max - min;
-                if (sum < 0.0) {
-                    sum += 32767.0;
-                }
+                sum = stat.sum+other.sum;
+               
 
             } else {
                 sum = (stat.sum + other.sum) / count;    // 2016-07-07   fixup
