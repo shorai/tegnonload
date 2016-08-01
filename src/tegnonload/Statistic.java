@@ -357,7 +357,8 @@ public class Statistic {
     }
 
     void writeFlowSQL(Integer messageId) {
-        if (sum > 0.00) {
+        //if (sum > 0.00)   // dew points may go negative
+        if (count > 0) {
             toDb(messageId); //, sensor, sensor.typeTID); //, count, sum, max, min, sumSquares);
             logger.log(Level.INFO, "Stat.writeFlow  " + dump());
             SensorDataHour instance = SensorDataHour.factory(this.sensor, startTime);// this.startTime);
@@ -395,14 +396,17 @@ public class Statistic {
             if (delta < 0.0) {
                 delta += 32767.0;
             }
-            if ((delta > 0.0) && (delta < 40.0)) {
+            if ((delta > 0.0) && (delta < 40.0)) { // is the correction reasonable?
                 val += delta;
                 min = prev.max;
                 logger.info("Previous Stat found change min energy from " + min + " to :" + prev.max + "  value from" + val + " to" + (max - prev.max));
+            } else { // correction is not reasonable
+                val = max-min;             
             }
 
-        } else {
-            logger.info("Previous Stat not found min energy is  " + min + " Value is:" + val);
+        } else { // previous not found
+            val = max-min;
+            logger.info("Previous Stat not found using max-min Value is:" + val + " Last:" + last + "First:" + first + " Max: " + max + " Min:" + min);
         }
 
         if (val > 0.00) {
